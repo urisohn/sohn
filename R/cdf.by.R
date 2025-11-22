@@ -14,7 +14,14 @@
 #'   Common parameters include \code{col}, \code{lwd}, \code{lty}, \code{pch},
 #'   \code{type}, etc.
 #'
-#' @return Invisibly returns a list of ECDF functions, one for each group.
+#' @return Invisibly returns a list containing:
+#' \itemize{
+#'   \item \code{ecdfs}: A list of ECDF functions, one for each group
+#'   \item \code{ks_test}: (when 2 groups) The Kolmogorov-Smirnov test result
+#'   \item \code{quantile_regression_25}: (when 2 groups and quantreg available) Quantile regression model for tau = 0.25
+#'   \item \code{quantile_regression_50}: (when 2 groups and quantreg available) Quantile regression model for tau = 0.50
+#'   \item \code{quantile_regression_75}: (when 2 groups and quantreg available) Quantile regression model for tau = 0.75
+#' }
 #'
 #' @details
 #' This function:
@@ -31,6 +38,14 @@
 #' \itemize{
 #'   \item A single value: applied to all groups
 #'   \item A vector: applied to groups in order of unique \code{x} values
+#' }
+#'
+#' When there are exactly 2 groups, the function automatically performs:
+#' \itemize{
+#'   \item Kolmogorov-Smirnov test for distribution equality
+#'   \item Quantile regression tests at 25th, 50th, and 75th percentiles (requires \code{quantreg} package)
+#'   \item Displays test results in the bottom right corner
+#'   \item Adds vertical dashed lines at the 25th, 50th, and 75th percentiles
 #' }
 #'
 #' @examples
@@ -60,6 +75,8 @@
 cdf.by <- function(y, x, data = NULL, ...) {
   # Capture y name for xlab (before potentially overwriting y)
   y_name <- deparse(substitute(y))
+  # Capture x name for legend title (before potentially overwriting x)
+  x_name <- deparse(substitute(x))
   
   # Extract plotting parameters from ...
   dots <- list(...)
@@ -74,7 +91,6 @@ cdf.by <- function(y, x, data = NULL, ...) {
     if (!y_name %in% names(data)) {
       stop(sprintf("Column '%s' not found in data", y_name))
     }
-    x_name <- deparse(substitute(x))
     if (!x_name %in% names(data)) {
       stop(sprintf("Column '%s' not found in data", x_name))
     }
@@ -86,6 +102,12 @@ cdf.by <- function(y, x, data = NULL, ...) {
   # Get unique groups and their order
   unique_x <- unique(x)
   n_groups <- length(unique_x)
+  
+  # Initialize return values for tests (when 2 groups)
+  ks_test_result <- NULL
+  quantile_regression_25 <- NULL
+  quantile_regression_50 <- NULL
+  quantile_regression_75 <- NULL
   
   # Helper function to extract parameter value for a group
   get_param <- function(param_name, group_idx) {
@@ -135,7 +157,7 @@ cdf.by <- function(y, x, data = NULL, ...) {
     
     # Get parameters for first group
     col1 <- get_param("col", 1) %||% 1
-    lwd1 <- get_param("lwd", 1) %||% 1
+    lwd1 <- get_param("lwd", 1) %||% 4  # Default lwd=4
     lty1 <- get_param("lty", 1) %||% 1
     type1 <- get_param("type", 1) %||% "s"
     pch1 <- get_param("pch", 1)
@@ -146,15 +168,30 @@ cdf.by <- function(y, x, data = NULL, ...) {
     plot_dots[vectorized_params] <- NULL
     
     # Build plot arguments
+    # Set main title if not provided
+    if (!"main" %in% names(plot_dots)) {
+      plot_dots$main <- paste0("Comparing Distribution of ", y_name, " by ", x_name)
+    }
+    # Set font and size for main title if not provided
+    if (!"font.main" %in% names(plot_dots)) plot_dots$font.main <- 2
+    if (!"cex.main" %in% names(plot_dots)) plot_dots$cex.main <- 1.3
+    
     plot_args <- list(x = y_seq, y = first_y_vals, 
                       type = type1, col = col1, lwd = lwd1, lty = lty1,
                       xlab = y_name, 
-                      ylab = "Cumulative Probability",
-                      ylim = c(0, 1))
+                      ylab = "% of observations",
+                      ylim = c(0, 1),
+                      font.lab = 2, cex.lab = 1.2, las = 1,
+                      yaxt = "n")  # Suppress default y-axis to draw custom percentage axis
     if (!is.null(pch1)) plot_args$pch <- pch1
     
     # Set up plot
     do.call(plot, c(plot_args, plot_dots))
+    
+    # Draw custom y-axis with percentage labels
+    y_ticks <- seq(0, 1, by = 0.25)
+    y_labels <- paste0(y_ticks * 100, "%")
+    axis(2, at = y_ticks, labels = y_labels, las = 1)
     
     # Add remaining ECDFs
     if (length(ecdf_list) > 1) {
@@ -164,7 +201,7 @@ cdf.by <- function(y, x, data = NULL, ...) {
         
         # Get parameters for this group
         coli <- get_param("col", i) %||% i
-        lwdi <- get_param("lwd", i) %||% 1
+        lwdi <- get_param("lwd", i) %||% 4  # Default lwd=4
         ltyi <- get_param("lty", i) %||% 1
         typei <- get_param("type", i) %||% "s"
         pchi <- get_param("pch", i)
@@ -177,10 +214,152 @@ cdf.by <- function(y, x, data = NULL, ...) {
         do.call(lines, lines_args)
       }
     }
+    
+    # Add legend on top with title showing x variable name
+    legend_cols <- sapply(1:length(ecdf_list), function(i) get_param("col", i) %||% i)
+    legend_lwds <- sapply(1:length(ecdf_list), function(i) get_param("lwd", i) %||% 4)
+    legend_ltys <- sapply(1:length(ecdf_list), function(i) get_param("lty", i) %||% 1)
+    legend("top", legend = as.character(unique_x), 
+           col = legend_cols, lwd = legend_lwds, lty = legend_ltys,
+           horiz = TRUE, bty = "n", title = x_name)
+    
+    # If exactly 2 groups, perform KS test and quantile regression tests
+    if (n_groups == 2) {
+      # Get data for both groups
+      y1 <- y[x == unique_x[1]]
+      y2 <- y[x == unique_x[2]]
+      
+      # Kolmogorov-Smirnov test
+      ks_test <- ks.test(y1, y2)
+      ks_test_result <- ks_test
+      ks_d <- round(ks_test$statistic, 3)
+      ks_p <- format.pvalue(ks_test$p.value, include_p = TRUE)
+      
+      # Add horizontal lines at 25%, 50%, and 75% of cumulative probability
+      quantile_probs <- c(0.25, 0.50, 0.75)
+      abline(h = quantile_probs, lty = 2, col = "gray80")
+      
+      # Quantile regression tests at 25th, 50th, and 75th percentiles
+      if (requireNamespace("quantreg", quietly = TRUE)) {
+        # Show message about independence assumption (only once per session)
+        if (is.null(getOption("sohn.cdf.by.message.shown"))) {
+          message("The p-values are done with quantile regressions that assume all observations are independent")
+          options(sohn.cdf.by.message.shown = TRUE)
+        }
+        
+        # Create data frame for quantile regression
+        df_qr <- data.frame(y = y, x_group = as.numeric(x == unique_x[2]))
+        
+        # Calculate quantiles for each group
+        q1_25 <- quantile(y1, probs = 0.25, na.rm = TRUE)
+        q1_50 <- quantile(y1, probs = 0.50, na.rm = TRUE)
+        q1_75 <- quantile(y1, probs = 0.75, na.rm = TRUE)
+        q2_25 <- quantile(y2, probs = 0.25, na.rm = TRUE)
+        q2_50 <- quantile(y2, probs = 0.50, na.rm = TRUE)
+        q2_75 <- quantile(y2, probs = 0.75, na.rm = TRUE)
+        
+        # Get ECDF functions for finding intersections
+        ecdf1 <- ecdf_list[[1]]
+        ecdf2 <- ecdf_list[[2]]
+        
+        # Test quantiles and get p-values, store models as separate objects
+        quantile_pvals <- character(length(quantile_probs))
+        quantile_regression_25 <- NULL
+        quantile_regression_50 <- NULL
+        quantile_regression_75 <- NULL
+        
+        for (i in seq_along(quantile_probs)) {
+          tau <- quantile_probs[i]
+          tryCatch({
+            qr_model <- quantreg::rq(y ~ x_group, data = df_qr, tau = tau)
+            qr_summary <- summary(qr_model, se = "iid")
+            qr_p <- qr_summary$coefficients[2, 4]  # p-value for x_group coefficient
+            quantile_pvals[i] <- format.pvalue(qr_p, include_p = TRUE)
+            
+            # Store model with appropriate name
+            if (tau == 0.25) {
+              quantile_regression_25 <- qr_model
+            } else if (tau == 0.50) {
+              quantile_regression_50 <- qr_model
+            } else if (tau == 0.75) {
+              quantile_regression_75 <- qr_model
+            }
+          }, error = function(e) {
+            quantile_pvals[i] <- "NA"
+          })
+        }
+        
+        # Get plot boundaries
+        usr <- par("usr")
+        x_range <- usr[2] - usr[1]
+        y_range <- usr[4] - usr[3]
+        
+        # Add p-values near left border (offset upward, moved 2% to the right)
+        for (i in seq_along(quantile_probs)) {
+          text(x = usr[1] + 0.02 * x_range, y = quantile_probs[i] + 0.02, 
+               labels = quantile_pvals[i],
+               adj = c(0, 0.5), cex = 0.8, font = 2)
+        }
+        
+        # Add value labels next to CDF lines (offset upward)
+        # Group 1 (left CDF) - values to the left of the line
+        text(x = q1_25, y = 0.25 + 0.02, labels = round(q1_25, 2),
+             adj = c(1, 0.5), cex = 0.8, font = 2, col = legend_cols[1])
+        text(x = q1_50, y = 0.50 + 0.02, labels = round(q1_50, 2),
+             adj = c(1, 0.5), cex = 0.8, font = 2, col = legend_cols[1])
+        text(x = q1_75, y = 0.75 + 0.02, labels = round(q1_75, 2),
+             adj = c(1, 0.5), cex = 0.8, font = 2, col = legend_cols[1])
+        
+        # Group 2 (right CDF) - values to the right of the line (further right to avoid overlap)
+        # Calculate offset based on plot width to move labels further right
+        label_offset <- 0.03 * x_range
+        text(x = q2_25 + label_offset, y = 0.25 + 0.02, labels = round(q2_25, 2),
+             adj = c(0, 0.5), cex = 0.8, font = 2, col = legend_cols[2])
+        text(x = q2_50 + label_offset, y = 0.50 + 0.02, labels = round(q2_50, 2),
+             adj = c(0, 0.5), cex = 0.8, font = 2, col = legend_cols[2])
+        text(x = q2_75 + label_offset, y = 0.75 + 0.02, labels = round(q2_75, 2),
+             adj = c(0, 0.5), cex = 0.8, font = 2, col = legend_cols[2])
+      }
+      
+      # Add KS test text (title in bold, D and p not bold)
+      usr <- par("usr")
+      x_range <- usr[2] - usr[1]
+      y_range <- usr[4] - usr[3]
+      # Calculate line height for positioning
+      line_height <- strheight("M", cex = 0.8) * 1.2
+      # Draw title in bold
+      text(x = usr[2] - 0.02 * x_range, y = usr[3] + 0.02 * y_range + 2 * line_height, 
+           labels = "Kolmogorov-Smirnov",
+           adj = c(1, 0), cex = 0.8, font = 2)
+      # Draw D and p values not bold
+      ks_values <- paste0("D=", ks_d, "\n", ks_p)
+      text(x = usr[2] - 0.02 * x_range, y = usr[3] + 0.02 * y_range, 
+           labels = ks_values,
+           adj = c(1, 0), cex = 0.8, font = 1)
+    }
   }
   
-  # Return ECDFs invisibly
+  # Return ECDFs and test results
   names(ecdf_list) <- as.character(unique_x)
-  invisible(ecdf_list)
+  
+  # Build return list
+  result <- list(ecdfs = ecdf_list)
+  
+  # Add test results if 2 groups
+  if (n_groups == 2) {
+    result$ks_test <- ks_test_result
+    # Add quantile regression models as separate named objects
+    if (!is.null(quantile_regression_25)) {
+      result$quantile_regression_25 <- quantile_regression_25
+    }
+    if (!is.null(quantile_regression_50)) {
+      result$quantile_regression_50 <- quantile_regression_50
+    }
+    if (!is.null(quantile_regression_75)) {
+      result$quantile_regression_75 <- quantile_regression_75
+    }
+  }
+  
+  invisible(result)
 }
 

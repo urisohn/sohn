@@ -135,6 +135,11 @@ scatter.gam <- function(x, y, data.dots = FALSE, three.dots = FALSE, data = NULL
   if (!"xlab" %in% names(plot_args)) plot_args$xlab <- x_name
   if (!"ylab" %in% names(plot_args)) plot_args$ylab <- y_name
   
+  # Set axis label formatting and orientation
+  if (!"font.lab" %in% names(plot_args)) plot_args$font.lab <- 2
+  if (!"cex.lab" %in% names(plot_args)) plot_args$cex.lab <- 1.2
+  if (!"las" %in% names(plot_args)) plot_args$las <- 1
+  
   # Plot smooth line
   plot_args_line <- c(list(x = x[ord], y = yh[ord], type = 'l', col = 'blue', ylim = ylim), 
                       plot_args)
