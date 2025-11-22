@@ -233,7 +233,7 @@ cdf.by <- function(y, x, data = NULL, ...) {
       ks_test <- ks.test(y1, y2)
       ks_test_result <- ks_test
       ks_d <- round(ks_test$statistic, 3)
-      ks_p <- format.pvalue(ks_test$p.value, include_p = TRUE)
+      ks_p <- sohn::format.pvalue(ks_test$p.value, include_p = TRUE)
       
       # Add horizontal lines at 25%, 50%, and 75% of cumulative probability
       quantile_probs <- c(0.25, 0.50, 0.75)
@@ -274,7 +274,7 @@ cdf.by <- function(y, x, data = NULL, ...) {
             qr_model <- quantreg::rq(y ~ x_group, data = df_qr, tau = tau)
             qr_summary <- summary(qr_model, se = "iid")
             qr_p <- qr_summary$coefficients[2, 4]  # p-value for x_group coefficient
-            quantile_pvals[i] <- format.pvalue(qr_p, include_p = TRUE)
+            quantile_pvals[i] <- sohn::format.pvalue(qr_p, include_p = TRUE)
             
             # Store model with appropriate name
             if (tau == 0.25) {
