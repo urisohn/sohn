@@ -176,11 +176,15 @@ cdf.by <- function(y, x, data = NULL, ...) {
     if (!"font.main" %in% names(plot_dots)) plot_dots$font.main <- 2
     if (!"cex.main" %in% names(plot_dots)) plot_dots$cex.main <- 1.3
     
+    # Set default ylim if not provided (extend to 1.15 to accommodate legend above plot)
+    if (!"ylim" %in% names(plot_dots)) {
+      plot_dots$ylim <- c(0, 1.15)
+    }
+    
     plot_args <- list(x = y_seq, y = first_y_vals, 
                       type = type1, col = col1, lwd = lwd1, lty = lty1,
                       xlab = y_name, 
                       ylab = "% of observations",
-                      ylim = c(0, 1),
                       font.lab = 2, cex.lab = 1.2, las = 1,
                       yaxt = "n")  # Suppress default y-axis to draw custom percentage axis
     if (!is.null(pch1)) plot_args$pch <- pch1
