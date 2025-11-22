@@ -1,0 +1,32 @@
+# History files
+.Rhistory
+.Rapp.history
+
+# Session Data files
+.RData
+.RDataTmp
+
+# User-specific files
+.Ruserdata
+
+# Example code in package build process
+*~
+*.swp
+*.swo
+
+# RStudio files
+.Rproj.user/
+*.Rproj
+
+# Output files
+*.o
+*.so
+*.dll
+
+# Mac files
+.DS_Store
+
+# Build artifacts
+*.tar.gz
+*.zip
+
