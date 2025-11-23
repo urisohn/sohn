@@ -13,6 +13,12 @@
 #' @param k Optional integer specifying the basis dimension for the smooth term
 #'   in the GAM model (passed to \code{s(x, k=k)}). If NULL (default), uses the
 #'   default basis dimension.
+#' @param plot.dist Character string specifying how to plot the distribution of \code{x}
+#'   underneath the scatter plot. Options: \code{NULL} (default, auto-select based on
+#'   number of unique values), \code{"none"} (no distribution plot), \code{"fhist"}
+#'   (always use \code{fhist()}), or \code{"hist"} (always use \code{hist()}).
+#'   When \code{NULL}, uses \code{fhist()} if there are 25 or fewer unique values,
+#'   otherwise uses \code{hist()}.
 #' @param ... Additional arguments passed to \code{plot()} and \code{gam()}.
 #'
 #' @return Invisibly returns the fitted GAM model object.
@@ -52,13 +58,19 @@
 #'
 #' @importFrom mgcv gam
 #' @export
-scatter.gam <- function(x, y, data.dots = FALSE, three.dots = FALSE, data = NULL, k = NULL, ...) {
+scatter.gam <- function(x, y, data.dots = FALSE, three.dots = FALSE, data = NULL, k = NULL, plot.dist = NULL, ...) {
   # Capture x and y names for labels (before potentially overwriting)
   x_name <- deparse(substitute(x))
   y_name <- deparse(substitute(y))
   
   # Extract additional arguments
   dots <- list(...)
+  
+  # Extract plot.dist from dots if it was passed via ... (for backward compatibility)
+  if ("plot.dist" %in% names(dots)) {
+    plot.dist <- dots$plot.dist
+    dots$plot.dist <- NULL
+  }
   
   # Handle data frame if provided
   if (!is.null(data)) {
@@ -131,6 +143,41 @@ scatter.gam <- function(x, y, data.dots = FALSE, three.dots = FALSE, data = NULL
     ylim <- range(yh, na.rm = TRUE)
   }
   
+  # Determine if we need to plot distribution and which method to use
+  plot_distribution <- is.null(plot.dist) || (plot.dist != "none")
+  use_fhist <- FALSE
+  use_hist <- FALSE
+  
+  if (plot_distribution) {
+    if (!is.null(plot.dist) && plot.dist == "fhist") {
+      use_fhist <- TRUE
+    } else if (!is.null(plot.dist) && plot.dist == "hist") {
+      use_hist <- TRUE
+    } else {
+      # Auto-select (when plot.dist is NULL): use fhist if 25 or fewer unique values
+      n_unique <- length(unique(x))
+      if (n_unique <= 25) {
+        use_fhist <- TRUE
+      } else {
+        use_hist <- TRUE
+      }
+    }
+  }
+  
+  # Set up layout for two panels if distribution plotting is requested
+  if (plot_distribution) {
+    # Save current par settings
+    old_par <- par(no.readonly = TRUE)
+    on.exit(par(old_par), add = TRUE)
+    
+    # Set up two panels: top for scatter plot, bottom for distribution
+    # Use layout to control spacing (no gap between panels)
+    layout(matrix(c(1, 2), nrow = 2, ncol = 1), heights = c(2, 1))
+    
+    # Set margins: remove bottom margin from top plot, remove top margin from bottom plot
+    par(mar = c(0, 4.1, 4.1, 2.1))  # Top plot: no bottom margin
+  }
+  
   # Set default labels if not provided
   if (!"xlab" %in% names(plot_args)) plot_args$xlab <- x_name
   if (!"ylab" %in% names(plot_args)) plot_args$ylab <- y_name
@@ -139,6 +186,11 @@ scatter.gam <- function(x, y, data.dots = FALSE, three.dots = FALSE, data = NULL
   if (!"font.lab" %in% names(plot_args)) plot_args$font.lab <- 2
   if (!"cex.lab" %in% names(plot_args)) plot_args$cex.lab <- 1.2
   if (!"las" %in% names(plot_args)) plot_args$las <- 1
+  
+  # Suppress x-axis on top plot if distribution is plotted below
+  if (plot_distribution) {
+    plot_args$xaxt <- "n"
+  }
   
   # Plot smooth line
   plot_args_line <- c(list(x = x[ord], y = yh[ord], type = 'l', col = 'blue', ylim = ylim), 
@@ -153,6 +205,38 @@ scatter.gam <- function(x, y, data.dots = FALSE, three.dots = FALSE, data = NULL
   # Add three-way spline points if requested
   if (three.dots == TRUE) {
     points(x3_means, y3_means, pch = 16)
+  }
+  
+  # Plot distribution in bottom panel if requested
+  if (plot_distribution) {
+    # Switch to bottom panel
+    par(mar = c(5.1, 4.1, 0, 2.1))  # Bottom plot: no top margin
+    
+    # Ensure x-axis range matches the scatter plot
+    xlim_dist <- range(x, na.rm = TRUE)
+    
+    # Prepare distribution plot arguments - only pass essential arguments
+    # fhist() and hist() have their own defaults, so we only override what's necessary
+    dist_plot_args <- list(
+      xlab = x_name,
+      ylab = "Frequency",
+      main = "",
+      xlim = xlim_dist
+    )
+    
+    # Optionally pass through some formatting arguments if they were specified
+    # but let fhist/hist use their defaults otherwise
+    if ("font.lab" %in% names(plot_args)) dist_plot_args$font.lab <- plot_args$font.lab
+    if ("cex.lab" %in% names(plot_args)) dist_plot_args$cex.lab <- plot_args$cex.lab
+    if ("las" %in% names(plot_args)) dist_plot_args$las <- plot_args$las
+    
+    if (use_fhist) {
+      # Use fhist() for distribution plot of x
+      do.call(fhist, c(list(x = x), dist_plot_args))
+    } else if (use_hist) {
+      # Use hist() for distribution plot of x
+      do.call(hist, c(list(x = x), dist_plot_args))
+    }
   }
   
   # Return GAM model invisibly
