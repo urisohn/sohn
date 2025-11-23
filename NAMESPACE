@@ -3,6 +3,7 @@
 export(cdf.by)
 export(fhist)
 export(format.pvalue)
+export(message.col)
 export(namedList)
 export(scatter.gam)
 importFrom(mgcv,gam)
