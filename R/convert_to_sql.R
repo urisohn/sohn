@@ -1,13 +1,15 @@
 #' Convert CSV file to SQL INSERT statements
 #' 
-#' Reads a CSV file and generates SQL statements to create a table and insert
-#' all rows. The function automatically infers column types (REAL for numeric,
-#' DATE for date strings matching YYYY-MM-DD format, TEXT otherwise) and
-#' generates appropriate CREATE TABLE and INSERT statements.
+#' Reads a CSV file and generates SQL statements to insert all rows. Optionally
+#' can also generate a CREATE TABLE statement. The function automatically infers
+#' column types (REAL for numeric, DATE for date strings matching YYYY-MM-DD
+#' format, TEXT otherwise).
 #' 
 #' @param input Character string. Path to the input CSV file.
 #' @param output Character string. Path to the output SQL file where the
 #'   statements will be written.
+#' @param create_table Logical. If \code{TRUE}, includes a CREATE TABLE
+#'   statement before the INSERT statements. Default is \code{FALSE}.
 #' 
 #' @return Invisibly returns NULL. The function writes SQL statements to the
 #'   specified output file.
@@ -23,8 +25,8 @@
 #'       \item Date columns (matching YYYY-MM-DD format) become \code{DATE}
 #'       \item All other columns become \code{TEXT}
 #'     }
-#'   \item Generates a \code{CREATE TABLE} statement using the base filename
-#'     (without extension) as the table name
+#'   \item If \code{create_table = TRUE}, generates a \code{CREATE TABLE}
+#'     statement using the base filename (without extension) as the table name
 #'   \item Generates \code{INSERT INTO} statements for each row
 #'   \item Writes all SQL statements to the output file
 #' }
@@ -35,10 +37,13 @@
 #' 
 #' @examples
 #' \dontrun{
-#' # Convert a CSV file to SQL
+#' # Convert a CSV file to SQL (INSERT statements only)
 #' convert_to_sql("data.csv", "data.sql")
 #' 
-#' # The output file will contain:
+#' # Convert a CSV file to SQL with CREATE TABLE statement
+#' convert_to_sql("data.csv", "data.sql", create_table = TRUE)
+#' 
+#' # With create_table = TRUE, the output file will contain:
 #' # CREATE TABLE `data` (
 #' #   `column1` TEXT,
 #' #   `column2` REAL,
@@ -51,7 +56,7 @@
 #' }
 #' 
 #' @export
-convert_to_sql <- function(input, output) {
+convert_to_sql <- function(input, output, create_table = FALSE) {
   
   # --- load CSV ---
   df <- read.csv(input, stringsAsFactors = FALSE)
@@ -68,9 +73,12 @@ convert_to_sql <- function(input, output) {
   
   types <- sapply(df, infer_type)
   
-  # --- CREATE TABLE ---
-  fields <- paste0("  `", names(types), "` ", types, collapse = ",\n")
-  create_stmt <- paste0("CREATE TABLE `", table_name, "` (\n", fields, "\n);\n\n")
+  # --- CREATE TABLE (optional) ---
+  create_stmt <- NULL
+  if (create_table) {
+    fields <- paste0("  `", names(types), "` ", types, collapse = ",\n")
+    create_stmt <- paste0("CREATE TABLE `", table_name, "` (\n", fields, "\n);\n\n")
+  }
   
   # --- INSERT rows ---
   escape <- function(x) gsub("'", "''", x)
@@ -85,6 +93,10 @@ convert_to_sql <- function(input, output) {
   })
   
   # --- write to output file ---
-  writeLines(c(create_stmt, rows), output)
+  if (create_table) {
+    writeLines(c(create_stmt, rows), output)
+  } else {
+    writeLines(rows, output)
+  }
 }
 
