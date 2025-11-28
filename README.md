@@ -146,7 +146,7 @@ message.col("This is a colored message", col = "cyan", font = 2)
 ## Dependencies
 
 - `mgcv` (for `scatter.gam()`)
-- `sandwich` (optional, for `lmr()` - install separately if needed)
+- `sandwich` (for `lmr()`)
 
 ## Author
 

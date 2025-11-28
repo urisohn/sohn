@@ -90,6 +90,7 @@
 #' @seealso \code{\link[stats]{lm}}, \code{\link[sandwich]{vcovHC}},
 #'   \code{\link[sandwich]{vcovCL}}, \code{\link[stats]{predict.lm}}
 #'
+#' @importFrom sandwich vcovHC vcovCL
 #' @export
 lmr <- function(formula, data, se_type = "HC3", cluster = NULL, ...) {
   # Fit OLS normally
