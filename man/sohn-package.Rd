@@ -4,7 +4,7 @@
 \name{sohn-package}
 \alias{sohn}
 \alias{sohn-package}
-\title{Miscellaneous Functions for Papers and Blogposts}
+\title{R functions I wished existed, and now do}
 \description{
 The \pkg{sohn} package provides miscellaneous functions used in papers and
 blogposts by Uri Simonsohn. It includes functions for data visualization,
