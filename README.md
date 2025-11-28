@@ -27,6 +27,7 @@ Functions I often use and are not (sufficiently?) available in existing packages
 ### 📈 Statistical Analyses
 
 - `lmr()`: lm() with robust & clustered standard errors
+- `simplify()`: Simplify statistical test output (e.g., t-tests) for cleaner, more readable results
 
 ### ✨ Formatting
 
@@ -60,5 +61,5 @@ GPL-3
 
 ## Version
 
-0.1.1
+0.1.3
 
