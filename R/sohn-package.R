@@ -17,10 +17,16 @@
 #' }
 #'
 #' @section Statistical Analyses:
-#' Functions for statistical modeling and result formatting:
+#' Functions for statistical modeling:
 #' \itemize{
 #'   \item \code{\link{lmr}}: Linear models with robust standard errors
+#' }
+#'
+#' @section Formatting:
+#' Functions for formatting output and results:
+#' \itemize{
 #'   \item \code{\link{format.pvalue}}: Format p-values for display
+#'   \item \code{\link{message.col}}: Print colored messages to console
 #' }
 #'
 #' @section Simulations:
@@ -34,7 +40,6 @@
 #' \itemize{
 #'   \item \code{\link{namedList}}: Create lists with automatic naming
 #'   \item \code{\link{convert_to_sql}}: Convert CSV files to SQL INSERT statements
-#'   \item \code{\link{message.col}}: Print colored messages to console
 #' }
 #'
 #' @author
