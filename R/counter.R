@@ -73,7 +73,7 @@ counter <- function() {
       # estimated cost per iteration
       per_iter <- elapsed / simk
       chosen_int <<- max(1, round(target_sec / per_iter))
-      cat("[estimated interval =", chosen_int, "] sim", simk, "\n")
+      #cat("[estimated interval =", chosen_int, "] sim", simk, "\n")
       return(invisible(NULL))
     }
 
