@@ -19,13 +19,12 @@ Created with help from Cursor (AI)
 
 ## Functions
 
-Functions are organized into the following categories:
+Functions are organized into the following categories. Click on a category to expand and see available functions:
 
-### Graphing
+<details>
+<summary><b>📊 Graphing</b> - Functions for data visualization and plotting</summary>
 
-Functions for data visualization and plotting.
-
-#### `scatter.gam()`
+### `scatter.gam()`
 
 Creates a scatter plot with a GAM (Generalized Additive Model) smooth line, with options to display data points and three-way spline summary points.
 
@@ -36,7 +35,7 @@ y <- 2*x + rnorm(100)
 scatter.gam(x, y, data.dots = TRUE, three.dots = TRUE)
 ```
 
-#### `cdf.by()`
+### `cdf.by()`
 
 Plots CDFs as multiple lines in the same plot, plotting a given y by different values of x.
 
@@ -47,7 +46,7 @@ x <- rep(c("A", "B", "C"), c(30, 40, 30))
 cdf.by(y, x, col = c("red", "green", "blue"), lwd = 2)
 ```
 
-#### `fhist()`
+### `fhist()`
 
 Plots distribution of a variable.  
 Unlike histograms, no binning.  
@@ -59,11 +58,12 @@ x <- c(1, 1, 2, 2, 2, 5, 5)
 fhist(x, col = "steelblue", xlab = "Value", ylab = "Frequency")
 ```
 
-### Statistical Analyses
+</details>
 
-Functions for statistical modeling and result formatting.
+<details>
+<summary><b>📈 Statistical Analyses</b> - Functions for statistical modeling and result formatting</summary>
 
-#### `lmr()`
+### `lmr()`
 
 Fits linear models with robust standard errors. Supports both heteroskedasticity-robust (HC) and cluster-robust standard errors. The resulting model object is modified so that `predict()` uses robust standard errors for prediction intervals.
 
@@ -74,7 +74,7 @@ fit <- lmr(y ~ x, data = data)
 summary(fit)
 ```
 
-#### `format.pvalue()`
+### `format.pvalue()`
 
 Formats p-values for clean display in figures and tables, adds p= or p<, and rounds to four decimal points.
 
@@ -87,11 +87,12 @@ format.pvalue(0.05, include_p = TRUE)
 # [1] "p = .05"
 ```
 
-### Simulations
+</details>
 
-Functions for running and monitoring simulations.
+<details>
+<summary><b>🔄 Simulations</b> - Functions for running and monitoring simulations</summary>
 
-#### `counter()`
+### `counter()`
 
 Adaptive progress reporter for simulations. Automatically determines an optimal reporting interval based on execution time.
 
@@ -104,11 +105,12 @@ for (i in 1:1000) {
 }
 ```
 
-### Data Management
+</details>
 
-Functions for data manipulation and utilities.
+<details>
+<summary><b>🗂️ Data Management</b> - Functions for data manipulation and utilities</summary>
 
-#### `namedList()`
+### `namedList()`
 
 Creates a list where objects are automatically named based on their variable names.  
 The existing name is a default, you can also set new names with it.
@@ -123,7 +125,7 @@ my_list <- namedList(x, y, z=z_MAT)
 names(my_list)  # "x" "y" "z"
 ```
 
-#### `convert_to_sql()`
+### `convert_to_sql()`
 
 Converts CSV files to SQL INSERT statements. Optionally generates CREATE TABLE statements.
 
@@ -132,7 +134,7 @@ Converts CSV files to SQL INSERT statements. Optionally generates CREATE TABLE s
 convert_to_sql("data.csv", "data.sql", create_table = TRUE)
 ```
 
-#### `message.col()`
+### `message.col()`
 
 Prints colored messages to the console with optional bold formatting.
 
@@ -140,6 +142,8 @@ Prints colored messages to the console with optional bold formatting.
 ```r
 message.col("This is a colored message", col = "cyan", font = 2)
 ```
+
+</details>
 
 
 
