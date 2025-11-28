@@ -1,6 +1,6 @@
 #' Create a list where objects are automatically named based on their existing names 
 #' 
-' @param ... Objects to include in the list. Can be named or unnamed.
+#' @param ... Objects to include in the list. Can be named or unnamed.
 #'
 #' @return A named list containing the input objects, with names derived from
 #'   the input object names when not explicitly provided.
