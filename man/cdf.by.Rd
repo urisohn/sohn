@@ -28,6 +28,11 @@ Invisibly returns a list containing:
   \item \code{quantile_regression_25}: (when 2 groups and quantreg available) Quantile regression model for tau = 0.25
   \item \code{quantile_regression_50}: (when 2 groups and quantreg available) Quantile regression model for tau = 0.50
   \item \code{quantile_regression_75}: (when 2 groups and quantreg available) Quantile regression model for tau = 0.75
+  \item \code{warnings}: (when warnings occur) A list of captured warnings, including:
+    \itemize{
+      \item \code{ks_ties}: Warning about ties in KS test (if present)
+      \item \code{quantile_regression_*_nonunique}: Warnings about non-uniqueness in quantile regression (if present)
+    }
 }
 }
 \description{

@@ -41,7 +41,8 @@ Functions I often use and are not (sufficiently?) available in existing packages
 ### 🗂️ Data Management
 
 - `namedList()`: Create lists with objects without having to name them
-- `convert_to_sql()`: Convert CSV to SQL 
+- `convert_to_sql()`: Convert CSV to SQL
+- `clear()`: Clear environment, console, and all graphics devices 
 
 
 

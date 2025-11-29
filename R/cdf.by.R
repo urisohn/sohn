@@ -21,6 +21,11 @@
 #'   \item \code{quantile_regression_25}: (when 2 groups and quantreg available) Quantile regression model for tau = 0.25
 #'   \item \code{quantile_regression_50}: (when 2 groups and quantreg available) Quantile regression model for tau = 0.50
 #'   \item \code{quantile_regression_75}: (when 2 groups and quantreg available) Quantile regression model for tau = 0.75
+#'   \item \code{warnings}: (when warnings occur) A list of captured warnings, including:
+#'     \itemize{
+#'       \item \code{ks_ties}: Warning about ties in KS test (if present)
+#'       \item \code{quantile_regression_*_nonunique}: Warnings about non-uniqueness in quantile regression (if present)
+#'     }
 #' }
 #'
 #' @details
@@ -74,9 +79,20 @@
 #' @export
 cdf.by <- function(y, x, data = NULL, ...) {
   # Capture y name for xlab (before potentially overwriting y)
-  y_name <- deparse(substitute(y))
+  y_name_raw <- deparse(substitute(y))
+  y_name <- if (grepl("\\$", y_name_raw)) {
+    strsplit(y_name_raw, "\\$")[[1]][length(strsplit(y_name_raw, "\\$")[[1]])]
+  } else {
+    y_name_raw
+  }
+  
   # Capture x name for legend title (before potentially overwriting x)
-  x_name <- deparse(substitute(x))
+  x_name_raw <- deparse(substitute(x))
+  x_name <- if (grepl("\\$", x_name_raw)) {
+    strsplit(x_name_raw, "\\$")[[1]][length(strsplit(x_name_raw, "\\$")[[1]])]
+  } else {
+    x_name_raw
+  }
   
   # Extract plotting parameters from ...
   dots <- list(...)
@@ -88,15 +104,16 @@ cdf.by <- function(y, x, data = NULL, ...) {
     }
     
     # Extract columns from data frame
-    if (!y_name %in% names(data)) {
-      stop(sprintf("Column '%s' not found in data", y_name))
+    # Use raw names for column lookup (they may include df$ prefix)
+    if (!y_name_raw %in% names(data)) {
+      stop(sprintf("Column '%s' not found in data", y_name_raw))
     }
-    if (!x_name %in% names(data)) {
-      stop(sprintf("Column '%s' not found in data", x_name))
+    if (!x_name_raw %in% names(data)) {
+      stop(sprintf("Column '%s' not found in data", x_name_raw))
     }
     
-    y <- data[[y_name]]
-    x <- data[[x_name]]
+    y <- data[[y_name_raw]]
+    x <- data[[x_name_raw]]
   }
   
   # Get unique groups and their order
@@ -108,6 +125,7 @@ cdf.by <- function(y, x, data = NULL, ...) {
   quantile_regression_25 <- NULL
   quantile_regression_50 <- NULL
   quantile_regression_75 <- NULL
+  warnings_list <- list()
   
   # Helper function to extract parameter value for a group
   get_param <- function(param_name, group_idx) {
@@ -170,7 +188,7 @@ cdf.by <- function(y, x, data = NULL, ...) {
     # Build plot arguments
     # Set main title if not provided
     if (!"main" %in% names(plot_dots)) {
-      plot_dots$main <- paste0("Comparing Distribution of ", y_name, " by ", x_name)
+      plot_dots$main <- paste0("Comparing Distribution of '", y_name, "' by '", x_name, "'")
     }
     # Set font and size for main title if not provided
     if (!"font.main" %in% names(plot_dots)) plot_dots$font.main <- 2
@@ -236,11 +254,19 @@ cdf.by <- function(y, x, data = NULL, ...) {
       y1 <- y[x == unique_x[1]]
       y2 <- y[x == unique_x[2]]
       
-      # Kolmogorov-Smirnov test
-      ks_test <- ks.test(y1, y2)
+      # Kolmogorov-Smirnov test (capture warnings about ties)
+      ks_test <- withCallingHandlers(
+        ks.test(y1, y2),
+        warning = function(w) {
+          if (grepl("p-value will be approximate in the presence of ties", w$message, ignore.case = TRUE)) {
+            warnings_list$ks_ties <<- w$message
+            invokeRestart("muffleWarning")
+          }
+        }
+      )
       ks_test_result <- ks_test
       ks_d <- round(ks_test$statistic, 3)
-      ks_p <- sohn::format.pvalue(ks_test$p.value, include_p = TRUE)
+      ks_p <- format.pvalue(ks_test$p.value, include_p = TRUE)
       
       # Add horizontal lines at 25%, 50%, and 75% of cumulative probability
       quantile_probs <- c(0.25, 0.50, 0.75)
@@ -278,10 +304,29 @@ cdf.by <- function(y, x, data = NULL, ...) {
         for (i in seq_along(quantile_probs)) {
           tau <- quantile_probs[i]
           tryCatch({
-            qr_model <- quantreg::rq(y ~ x_group, data = df_qr, tau = tau)
-            qr_summary <- summary(qr_model, se = "iid")
+            # Capture warnings about non-uniqueness in quantile regression
+            qr_model <- withCallingHandlers(
+              quantreg::rq(y ~ x_group, data = df_qr, tau = tau),
+              warning = function(w) {
+                if (grepl("non.*unique|nonunique", w$message, ignore.case = TRUE)) {
+                  warning_key <- paste0("quantile_regression_", tau, "_nonunique")
+                  warnings_list[[warning_key]] <<- w$message
+                  invokeRestart("muffleWarning")
+                }
+              }
+            )
+            qr_summary <- withCallingHandlers(
+              summary(qr_model, se = "iid"),
+              warning = function(w) {
+                if (grepl("non.*unique|nonunique", w$message, ignore.case = TRUE)) {
+                  warning_key <- paste0("quantile_regression_", tau, "_summary_nonunique")
+                  warnings_list[[warning_key]] <<- w$message
+                  invokeRestart("muffleWarning")
+                }
+              }
+            )
             qr_p <- qr_summary$coefficients[2, 4]  # p-value for x_group coefficient
-            quantile_pvals[i] <- sohn::format.pvalue(qr_p, include_p = TRUE)
+            quantile_pvals[i] <- format.pvalue(qr_p, include_p = TRUE)
             
             # Store model with appropriate name
             if (tau == 0.25) {
@@ -301,45 +346,82 @@ cdf.by <- function(y, x, data = NULL, ...) {
         x_range <- usr[2] - usr[1]
         y_range <- usr[4] - usr[3]
         
-        # Add p-values near left border (offset upward, moved 2% to the right)
+        # Add p-values just above the horizontal lines
         for (i in seq_along(quantile_probs)) {
           text(x = usr[1] + 0.02 * x_range, y = quantile_probs[i] + 0.02, 
                labels = quantile_pvals[i],
                adj = c(0, 0.5), cex = 0.8, font = 2)
         }
         
-        # Add value labels next to CDF lines (offset upward)
-        # Group 1 (left CDF) - values to the left of the line
-        text(x = q1_25, y = 0.25 + 0.02, labels = round(q1_25, 2),
-             adj = c(1, 0.5), cex = 0.8, font = 2, col = legend_cols[1])
-        text(x = q1_50, y = 0.50 + 0.02, labels = round(q1_50, 2),
-             adj = c(1, 0.5), cex = 0.8, font = 2, col = legend_cols[1])
-        text(x = q1_75, y = 0.75 + 0.02, labels = round(q1_75, 2),
-             adj = c(1, 0.5), cex = 0.8, font = 2, col = legend_cols[1])
+        # Add value labels next to CDF lines
+        # Position labels based on which CDF is to the left/right at each quantile
+        # Use adj to control alignment and add offset to separate labels
+        usr <- par("usr")
+        x_range <- usr[2] - usr[1]
+        label_offset <- 0.05 / 3 * x_range  # ~1.67% of plot width for separation
         
-        # Group 2 (right CDF) - values to the right of the line (further right to avoid overlap)
-        # Calculate offset based on plot width to move labels further right
-        label_offset <- 0.03 * x_range
-        text(x = q2_25 + label_offset, y = 0.25 + 0.02, labels = round(q2_25, 2),
-             adj = c(0, 0.5), cex = 0.8, font = 2, col = legend_cols[2])
-        text(x = q2_50 + label_offset, y = 0.50 + 0.02, labels = round(q2_50, 2),
-             adj = c(0, 0.5), cex = 0.8, font = 2, col = legend_cols[2])
-        text(x = q2_75 + label_offset, y = 0.75 + 0.02, labels = round(q2_75, 2),
-             adj = c(0, 0.5), cex = 0.8, font = 2, col = legend_cols[2])
+        # 25th percentile
+        if (q1_25 < q2_25) {
+          # Group 1 is to the left, right-align its label and offset left
+          text(x = q1_25 - label_offset, y = 0.25 + 0.02, labels = round(q1_25, 2),
+               adj = c(1, 0.5), cex = 0.8, font = 2, col = legend_cols[1])
+          # Group 2 is to the right, left-align its label and offset right
+          text(x = q2_25 + label_offset, y = 0.25 + 0.02, labels = round(q2_25, 2),
+               adj = c(0, 0.5), cex = 0.8, font = 2, col = legend_cols[2])
+        } else {
+          # Group 2 is to the left, right-align its label and offset left
+          text(x = q2_25 - label_offset, y = 0.25 + 0.02, labels = round(q2_25, 2),
+               adj = c(1, 0.5), cex = 0.8, font = 2, col = legend_cols[2])
+          # Group 1 is to the right, left-align its label and offset right
+          text(x = q1_25 + label_offset, y = 0.25 + 0.02, labels = round(q1_25, 2),
+               adj = c(0, 0.5), cex = 0.8, font = 2, col = legend_cols[1])
+        }
+        
+        # 50th percentile
+        if (q1_50 < q2_50) {
+          # Group 1 is to the left, right-align its label and offset left
+          text(x = q1_50 - label_offset, y = 0.50 + 0.02, labels = round(q1_50, 2),
+               adj = c(1, 0.5), cex = 0.8, font = 2, col = legend_cols[1])
+          # Group 2 is to the right, left-align its label and offset right
+          text(x = q2_50 + label_offset, y = 0.50 + 0.02, labels = round(q2_50, 2),
+               adj = c(0, 0.5), cex = 0.8, font = 2, col = legend_cols[2])
+        } else {
+          # Group 2 is to the left, right-align its label and offset left
+          text(x = q2_50 - label_offset, y = 0.50 + 0.02, labels = round(q2_50, 2),
+               adj = c(1, 0.5), cex = 0.8, font = 2, col = legend_cols[2])
+          # Group 1 is to the right, left-align its label and offset right
+          text(x = q1_50 + label_offset, y = 0.50 + 0.02, labels = round(q1_50, 2),
+               adj = c(0, 0.5), cex = 0.8, font = 2, col = legend_cols[1])
+        }
+        
+        # 75th percentile
+        if (q1_75 < q2_75) {
+          # Group 1 is to the left, right-align its label and offset left
+          text(x = q1_75 - label_offset, y = 0.75 + 0.02, labels = round(q1_75, 2),
+               adj = c(1, 0.5), cex = 0.8, font = 2, col = legend_cols[1])
+          # Group 2 is to the right, left-align its label and offset right
+          text(x = q2_75 + label_offset, y = 0.75 + 0.02, labels = round(q2_75, 2),
+               adj = c(0, 0.5), cex = 0.8, font = 2, col = legend_cols[2])
+        } else {
+          # Group 2 is to the left, right-align its label and offset left
+          text(x = q2_75 - label_offset, y = 0.75 + 0.02, labels = round(q2_75, 2),
+               adj = c(1, 0.5), cex = 0.8, font = 2, col = legend_cols[2])
+          # Group 1 is to the right, left-align its label and offset right
+          text(x = q1_75 + label_offset, y = 0.75 + 0.02, labels = round(q1_75, 2),
+               adj = c(0, 0.5), cex = 0.8, font = 2, col = legend_cols[1])
+        }
       }
       
-      # Add KS test text (title in bold, D and p not bold)
+      # Add KS test results in bottom right corner
       usr <- par("usr")
       x_range <- usr[2] - usr[1]
       y_range <- usr[4] - usr[3]
-      # Calculate line height for positioning
-      line_height <- strheight("M", cex = 0.8) * 1.2
-      # Draw title in bold
-      text(x = usr[2] - 0.02 * x_range, y = usr[3] + 0.02 * y_range + 2 * line_height, 
-           labels = "Kolmogorov-Smirnov",
-           adj = c(1, 0), cex = 0.8, font = 2)
-      # Draw D and p values not bold
-      ks_values <- paste0("D=", ks_d, "\n", ks_p)
+      # Format KS p-value (format.pvalue with include_p=TRUE gives "p = .05")
+      ks_p_formatted <- format.pvalue(ks_test$p.value, include_p = TRUE)
+      # Format KS results: "Kolmogorov-Smirnov\nD = xx\np = p"
+      # format.pvalue already includes "p = ", so we use it directly
+      ks_values <- paste0("Kolmogorov-Smirnov\nD = ", ks_d, "\n", ks_p_formatted)
+      # Position in bottom right corner
       text(x = usr[2] - 0.02 * x_range, y = usr[3] + 0.02 * y_range, 
            labels = ks_values,
            adj = c(1, 0), cex = 0.8, font = 1)
@@ -365,6 +447,11 @@ cdf.by <- function(y, x, data = NULL, ...) {
     if (!is.null(quantile_regression_75)) {
       result$quantile_regression_75 <- quantile_regression_75
     }
+  }
+  
+  # Add warnings if any were captured
+  if (length(warnings_list) > 0) {
+    result$warnings <- warnings_list
   }
   
   invisible(result)

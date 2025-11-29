@@ -4,15 +4,17 @@
 \alias{counter}
 \title{Simulation Counter}
 \usage{
-counter()
+counter(simk)
+}
+\arguments{
+\item{simk}{The current iteration number}
 }
 \value{
-Takes a single argument \code{simk} (the current
-  iteration number) and prints progress updates.
+Prints progress updates (invisibly returns NULL)
 }
 \description{
-Functoin that adaptively find the frequency with which to report simulation
-progress so that it reports approximtaely within 5 seconds.
+Function that adaptively finds the frequency with which to report simulation
+progress so that it reports approximately within 5 seconds.
 }
 \details{
 This function:
@@ -36,16 +38,15 @@ The reporter works in two phases:
 If all checkpoints complete quickly (before reaching iteration 50), the
 function estimates an appropriate interval based on the average time per
 iteration.
+
+State (simk and time) is tracked within the function's environment.
 }
 \examples{
-# Create a progress reporter
-report <- counter()
-
 # Use it in a simulation loop
 for (i in 1:100) {
   # Your simulation code here
   Sys.sleep(0.1)  # Simulate work
-  report(i)  # Report progress
+  counter(i)  # Report progress
 }
 
 # The reporter will automatically determine when to print updates
