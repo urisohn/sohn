@@ -8,7 +8,7 @@ text2(
   x,
   y,
   labels,
-  bg = "yellow",
+  bg = "papayawhip",
   cex = 1,
   pad = 0.03,
   pad_v = 0.25,
