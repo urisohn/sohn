@@ -70,7 +70,7 @@
 #' density.by(value, group, data = df)
 #' density.by(value, group, data = df, col = c("red", "blue"))
 #'
-#' @export
+#' @export density.by
 density.by <- function(y, x, data = NULL, ...) {
   #OUTLINE
   #1. Capture variable names for labels
