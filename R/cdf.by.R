@@ -116,17 +116,17 @@ cdf.by <- function(y, x, data = NULL, ...) {
     x <- data[[x_name_raw]]
   }
   
-  #Drop missing data
-    isnax=is.na(x)
-    isnay=is.na(y)
-    x=x[!isnax & !isnay]
-    y=y[!isnax & !isnay]
-    
-    n.nax = sum(isnax)
-    n.nay = sum(isnay)
-    
-    if (n.nax>0) message.col("sohn::cdf.by() says: dropped ",n.nax," observations with missing '",x_name_raw,"' values",col='red4')
-    if (n.nay>0) message.col("sohn::cdf.by() says: dropped ",n.nay," observations with missing '",y_name_raw,"' values",col='red4')
+  # Drop missing data
+  isnax=is.na(x)
+  isnay=is.na(y)
+  x=x[!isnax & !isnay]
+  y=y[!isnax & !isnay]
+  
+  n.nax = sum(isnax)
+  n.nay = sum(isnay)
+  
+  if (n.nax>0) message.col("sohn::cdf.by() says: dropped ",n.nax," observations with missing '",x_name_raw,"' values",col='red4')
+  if (n.nay>0) message.col("sohn::cdf.by() says: dropped ",n.nay," observations with missing '",y_name_raw,"' values",col='red4')
   
   # Get unique groups and their order
   unique_x <- unique(x)
@@ -138,6 +138,25 @@ cdf.by <- function(y, x, data = NULL, ...) {
   quantile_regression_50 <- NULL
   quantile_regression_75 <- NULL
   warnings_list <- list()
+  
+  # Get default colors based on number of groups
+  get_default_colors <- function(n) {
+    if (n == 2) {
+      return(c("red4", "dodgerblue"))
+    } else if (n == 3) {
+      return(c("red4", "dodgerblue", "green4"))
+    } else if (n == 4) {
+      return(c("orange1", "orange3", "red2", "red4"))
+    } else {
+      # For 5+ groups, use a combination of colors that cycle
+      # Start with the 4-group palette and add more colors
+      base_colors <- c("orange1", "orange3", "red2", "red4", 
+                       "dodgerblue", "dodgerblue4", "green4", "darkgreen",
+                       "purple", "purple4", "darkorchid", "magenta4")
+      return(base_colors[1:n])
+    }
+  }
+  default_colors <- get_default_colors(n_groups)
   
   # Helper function to extract parameter value for a group
   get_param <- function(param_name, group_idx) {
@@ -186,7 +205,7 @@ cdf.by <- function(y, x, data = NULL, ...) {
     first_y_vals <- first_ecdf(y_seq)
     
     # Get parameters for first group
-    col1 <- get_param("col", 1) %||% 1
+    col1 <- get_param("col", 1) %||% default_colors[1]
     lwd1 <- get_param("lwd", 1) %||% 4  # Default lwd=4
     lty1 <- get_param("lty", 1) %||% 1
     type1 <- get_param("type", 1) %||% "s"
@@ -194,34 +213,34 @@ cdf.by <- function(y, x, data = NULL, ...) {
     
     # Build plot arguments
     # Set main title if not provided
-    if (!"main" %in% names(dots)) {
-      main_title <- paste0("Comparing Distribution of '", y_name, "' by '", x_name, "'")
-    } else {
-      main_title <- dots$main
-    }
+      if (!"main" %in% names(dots)) {
+        main_title <- paste0("Comparing Distribution of '", y_name, "' by '", x_name, "'")
+      } else {
+        main_title <- dots$main
+      }
     # Set font and size for main title if not provided
-    font_main <- if ("font.main" %in% names(dots)) dots$font.main else 2
-    cex_main <- if ("cex.main" %in% names(dots)) dots$cex.main else 1.3
+      font_main <- if ("font.main" %in% names(dots)) dots$font.main else 2
+      cex_main <- if ("cex.main" %in% names(dots)) dots$cex.main else 1.3
     
     # Set xlab if not provided
-    xlab_title <- if ("xlab" %in% names(dots)) dots$xlab else y_name
+      xlab_title <- if ("xlab" %in% names(dots)) dots$xlab else y_name
     
     # Set ylab if not provided
-    ylab_title <- if ("ylab" %in% names(dots)) dots$ylab else "% of observations"
+      ylab_title <- if ("ylab" %in% names(dots)) dots$ylab else "% of observations"
     
     # Set default ylim if not provided (extend to 1.15 to accommodate legend above plot)
-    if (!"ylim" %in% names(dots)) {
-      default_ylim <- c(0, 1.15)
-    } else {
-      default_ylim <- dots$ylim
-    }
+      if (!"ylim" %in% names(dots)) {
+        default_ylim <- c(0, 1.15)
+      } else {
+        default_ylim <- dots$ylim
+      }
     
     # Remove vectorized parameters and data from dots for plot()
     # Also remove xlab, ylab, main since we handle them separately
-      plot_dots <- dots
-      vectorized_params <- c("col", "lwd", "lty", "type", "pch", "data")
-      plot_params_to_remove <- c(vectorized_params, "xlab", "ylab", "main")
-      plot_dots[plot_params_to_remove] <- NULL
+    plot_dots <- dots
+    vectorized_params <- c("col", "lwd", "lty", "type", "pch", "data")
+    plot_params_to_remove <- c(vectorized_params, "xlab", "ylab", "main")
+    plot_dots[plot_params_to_remove] <- NULL
     
     plot_args <- list(x = y_seq, y = first_y_vals, 
                       type = type1, col = col1, lwd = lwd1, lty = lty1,
@@ -250,7 +269,7 @@ cdf.by <- function(y, x, data = NULL, ...) {
         y_vals <- ecdf_fun(y_seq)
         
         # Get parameters for this group
-        coli <- get_param("col", i) %||% i
+        coli <- get_param("col", i) %||% default_colors[i]
         lwdi <- get_param("lwd", i) %||% 4  # Default lwd=4
         ltyi <- get_param("lty", i) %||% 1
         typei <- get_param("type", i) %||% "s"
@@ -266,7 +285,7 @@ cdf.by <- function(y, x, data = NULL, ...) {
     }
     
     # Add legend on top with title showing x variable name
-    legend_cols <- sapply(1:length(ecdf_list), function(i) get_param("col", i) %||% i)
+    legend_cols <- sapply(1:length(ecdf_list), function(i) get_param("col", i) %||% default_colors[i])
     legend_lwds <- sapply(1:length(ecdf_list), function(i) get_param("lwd", i) %||% 4)
     legend_ltys <- sapply(1:length(ecdf_list), function(i) get_param("lty", i) %||% 1)
     legend("top", legend = as.character(unique_x), 
@@ -274,31 +293,31 @@ cdf.by <- function(y, x, data = NULL, ...) {
            horiz = TRUE, bty = "n", title = x_name)
     
     # If exactly 2 groups, perform KS test and quantile regression tests
-    if (n_groups == 2) {
-      # Get data for both groups
-      y1 <- y[x == unique_x[1]]
-      y2 <- y[x == unique_x[2]]
-      
-      # Kolmogorov-Smirnov test (capture warnings about ties)
-      ks_test <- withCallingHandlers(
-        ks.test(y1, y2),
-        warning = function(w) {
-          if (grepl("p-value will be approximate in the presence of ties", w$message, ignore.case = TRUE)) {
-            warnings_list$ks_ties <<- w$message
-            invokeRestart("muffleWarning")
+      if (n_groups == 2) {
+        # Get data for both groups
+        y1 <- y[x == unique_x[1]]
+        y2 <- y[x == unique_x[2]]
+        
+        # Kolmogorov-Smirnov test (capture warnings about ties)
+        ks_test <- withCallingHandlers(
+          ks.test(y1, y2),
+          warning = function(w) {
+            if (grepl("p-value will be approximate in the presence of ties", w$message, ignore.case = TRUE)) {
+              warnings_list$ks_ties <<- w$message
+              invokeRestart("muffleWarning")
+            }
           }
-        }
-      )
-      ks_test_result <- ks_test
-      ks_d <- round(ks_test$statistic, 3)
-      ks_p <- format.pvalue(ks_test$p.value, include_p = TRUE)
-      
-      # Add horizontal lines at 25%, 50%, and 75% of cumulative probability
-      quantile_probs <- c(0.25, 0.50, 0.75)
-      abline(h = quantile_probs, lty = 2, col = "gray80")
-      
-      # Quantile regression tests at 25th, 50th, and 75th percentiles
-      if (requireNamespace("quantreg", quietly = TRUE)) {
+        )
+        ks_test_result <- ks_test
+        ks_d <- round(ks_test$statistic, 3)
+        ks_p <- format.pvalue(ks_test$p.value, include_p = TRUE)
+        
+        # Add horizontal lines at 25%, 50%, and 75% of cumulative probability
+        quantile_probs <- c(0.25, 0.50, 0.75)
+        abline(h = quantile_probs, lty = 2, col = "gray80")
+        
+        # Quantile regression tests at 25th, 50th, and 75th percentiles
+        if (requireNamespace("quantreg", quietly = TRUE)) {
         # Show message about independence assumption (only once per session)
         if (is.null(getOption("sohn.cdf.by.message.shown"))) {
           message("The p-values are done with quantile regressions that assume all observations are independent")
@@ -438,18 +457,18 @@ cdf.by <- function(y, x, data = NULL, ...) {
       }
       
       # Add KS test results in bottom right corner
-      usr <- par("usr")
-      x_range <- usr[2] - usr[1]
-      y_range <- usr[4] - usr[3]
+        usr <- par("usr")
+        x_range <- usr[2] - usr[1]
+        y_range <- usr[4] - usr[3]
       # Format KS p-value (format.pvalue with include_p=TRUE gives "p = .05")
-      ks_p_formatted <- format.pvalue(ks_test$p.value, include_p = TRUE)
+        ks_p_formatted <- format.pvalue(ks_test$p.value, include_p = TRUE)
       # Format KS results: "Kolmogorov-Smirnov\nD = xx\np = p"
       # format.pvalue already includes "p = ", so we use it directly
-      ks_values <- paste0("Kolmogorov-Smirnov\nD = ", ks_d, "\n", ks_p_formatted)
+        ks_values <- paste0("Kolmogorov-Smirnov\nD = ", ks_d, "\n", ks_p_formatted)
       # Position in bottom right corner
-      text(x = usr[2] - 0.02 * x_range, y = usr[3] + 0.02 * y_range, 
-           labels = ks_values,
-           adj = c(1, 0), cex = 0.8, font = 1)
+        text(x = usr[2] - 0.02 * x_range, y = usr[3] + 0.02 * y_range, 
+             labels = ks_values,
+             adj = c(1, 0), cex = 0.8, font = 1)
     }
   }
   

@@ -1,0 +1,434 @@
+#' Plot Density Functions by Group
+#'
+#' Plots density functions separately for each unique value of a grouping
+#' variable, with support for vectorized plotting parameters.
+#'
+#' @param y A numeric vector of values to compute densities for, or a column name
+#'   if \code{data} is provided.
+#' @param x A vector (factor, character, or numeric) used to group the data,
+#'   or a column name if \code{data} is provided.
+#' @param data An optional data frame containing the variables \code{y} and \code{x}.
+#' @param ... Additional arguments passed to plotting functions. Can be scalars
+#'   (applied to all groups) or vectors (applied element-wise to each group).
+#'   Common parameters include \code{col}, \code{lwd}, \code{lty}, \code{pch},
+#'   \code{type}, etc. Arguments can also be passed to \code{density()} such as
+#'   \code{bw}, \code{kernel}, etc.
+#'
+#' @return Invisibly returns a list containing:
+#' \itemize{
+#'   \item \code{densities}: A list of density objects, one for each group
+#'   \item \code{ks_test}: (when 2 groups) The Kolmogorov-Smirnov test result
+#'   \item \code{warnings}: (when warnings occur) A list of captured warnings, including:
+#'     \itemize{
+#'       \item \code{ks_ties}: Warning about ties in KS test (if present)
+#'     }
+#' }
+#'
+#' @details
+#' This function:
+#' \itemize{
+#'   \item Splits \code{y} by unique values of \code{x}
+#'   \item Computes a density estimate for each group
+#'   \item Plots all densities on the same graph
+#'   \item Handles plotting parameters: scalars apply to all groups, vectors
+#'     apply element-wise to groups (in order of unique \code{x} values)
+#' }
+#'
+#' The densities are plotted as smooth curves. Parameters like
+#' \code{col}, \code{lwd}, \code{lty}, and \code{pch} can be specified as:
+#' \itemize{
+#'   \item A single value: applied to all groups
+#'   \item A vector: applied to groups in order of unique \code{x} values
+#' }
+#'
+#' When there are exactly 2 groups, the function automatically performs:
+#' \itemize{
+#'   \item Kolmogorov-Smirnov test for distribution equality
+#'   \item Displays test results in the bottom right corner
+#' }
+#'
+#' @examples
+#' # Basic usage
+#' y <- rnorm(100)
+#' x <- rep(c("A", "B", "C"), c(30, 40, 30))
+#' density.by(y, x)
+#'
+#' # With custom colors (scalar - same for all)
+#' density.by(y, x, col = "blue")
+#'
+#' # With custom colors (vector - different for each group)
+#' density.by(y, x, col = c("red", "green", "blue"))
+#'
+#' # Multiple parameters
+#' density.by(y, x, col = c("red", "green", "blue"), lwd = c(1, 2, 3))
+#'
+#' # With line type
+#' density.by(y, x, col = c("red", "green", "blue"), lty = c(1, 2, 3), lwd = 2)
+#'
+#' # Using data frame
+#' df <- data.frame(value = rnorm(100), group = rep(c("A", "B"), 50))
+#' density.by(value, group, data = df)
+#' density.by(value, group, data = df, col = c("red", "blue"))
+#'
+#' @export
+density.by <- function(y, x, data = NULL, ...) {
+  #OUTLINE
+  #1. Capture variable names for labels
+  #2. Extract and handle parameters
+  #3. Handle data frame input
+  #4. Drop missing data
+  #5. Get unique groups
+  #6. Initialize return values
+  #7. Get default colors based on number of groups
+  #8. Helper function: extract parameter value for a group
+  #9. Separate density() arguments from plotting arguments
+  #10. Compute densities for each group
+  #11. Determine overall range for plotting
+  #12. Helper function: NULL coalescing
+  #13. Plot first density to set up the plot
+  #14. Get parameters for first group
+  #15. Build plot arguments
+  #16. Set up plot
+  #17. Add remaining densities
+  #18. Add points at y=0 and x=mean with labels
+  #19. Add legend
+  #20. Perform KS test (if 2 groups)
+  #21. Return densities and test results
+  
+  #1. Capture variable names for labels
+  # Capture y name for xlab (before potentially overwriting y)
+    y_name_raw <- deparse(substitute(y))
+    y_name <- if (grepl("\\$", y_name_raw)) {
+      strsplit(y_name_raw, "\\$")[[1]][length(strsplit(y_name_raw, "\\$")[[1]])]
+    } else {
+      y_name_raw
+    }
+  
+  # Capture x name for legend title (before potentially overwriting x)
+    x_name_raw <- deparse(substitute(x))
+    x_name <- if (grepl("\\$", x_name_raw)) {
+      strsplit(x_name_raw, "\\$")[[1]][length(strsplit(x_name_raw, "\\$")[[1]])]
+    } else {
+      x_name_raw
+    }
+  
+  #2. Extract and handle parameters
+  # Extract plotting parameters from ...
+    dots <- list(...)
+  
+  #3. Handle data frame input
+  # Handle data frame if provided
+    if (!is.null(data)) {
+    if (!is.data.frame(data)) {
+      stop("'data' must be a data frame")
+    }
+    
+      # Extract columns from data frame
+      # Use raw names for column lookup (they may include df$ prefix)
+        if (!y_name_raw %in% names(data)) {
+          stop(sprintf("Column '%s' not found in data", y_name_raw))
+        }
+        if (!x_name_raw %in% names(data)) {
+          stop(sprintf("Column '%s' not found in data", x_name_raw))
+        }
+        
+        y <- data[[y_name_raw]]
+        x <- data[[x_name_raw]]
+    }
+  
+  #4. Drop missing data
+  # Drop missing data
+    isnax=is.na(x)
+    isnay=is.na(y)
+    x=x[!isnax & !isnay]
+    y=y[!isnax & !isnay]
+    
+    n.nax = sum(isnax)
+    n.nay = sum(isnay)
+    
+    if (n.nax>0) message.col("sohn::density.by() says: dropped ",n.nax," observations with missing '",x_name_raw,"' values",col='red4')
+    if (n.nay>0) message.col("sohn::density.by() says: dropped ",n.nay," observations with missing '",y_name_raw,"' values",col='red4')
+  
+  #5. Get unique groups
+  # Get unique groups and their order
+    unique_x <- unique(x)
+    n_groups <- length(unique_x)
+  
+  #6. Initialize return values
+  # Initialize return values for tests (when 2 groups)
+    ks_test_result <- NULL
+    warnings_list <- list()
+  
+  #7. Get default colors based on number of groups
+  # Get default colors based on number of groups
+    get_default_colors <- function(n) {
+        if (n == 2) {
+          return(c("red4", "dodgerblue"))
+        } else if (n == 3) {
+          return(c("red4", "dodgerblue", "green4"))
+        } else if (n == 4) {
+          return(c("orange1", "orange3", "red2", "red4"))
+        } else {
+          # For 5+ groups, use a combination of colors that cycle
+          # Start with the 4-group palette and add more colors
+          base_colors <- c("orange1", "orange3", "red2", "red4", 
+                           "dodgerblue", "dodgerblue4", "green4", "darkgreen",
+                           "purple", "purple4", "darkorchid", "magenta4")
+          return(base_colors[1:n])
+        }
+      }
+    default_colors <- get_default_colors(n_groups)
+  
+  #8. Helper function: extract parameter value for a group
+  # Helper function to extract parameter value for a group
+    get_param <- function(param_name, group_idx) {
+      if (param_name %in% names(dots)) {
+        param_val <- dots[[param_name]]
+        if (length(param_val) == 1) {
+          return(param_val)
+        } else if (length(param_val) >= group_idx) {
+          return(param_val[group_idx])
+        } else {
+          return(param_val[1])  # Recycle if shorter
+        }
+      }
+      return(NULL)
+    }
+    
+  #9. Separate density() arguments from plotting arguments
+  # Separate density() arguments from plotting arguments
+  # density() arguments: bw, adjust, kernel, n, from, to, etc.
+    density_args <- c("bw", "adjust", "kernel", "n", "from", "to", "na.rm", "weights")
+    density_params <- list()
+    plot_params <- dots
+    
+    for (arg in density_args) {
+      if (arg %in% names(dots)) {
+        density_params[[arg]] <- dots[[arg]]
+        plot_params[[arg]] <- NULL
+      }
+    }
+  
+  #10. Compute densities for each group
+  # Compute densities for each group
+    density_list <- list()
+    y_ranges <- list()
+    y_density_max <- list()
+    
+    for (i in seq_along(unique_x)) {
+      group_val <- unique_x[i]
+      y_group <- y[x == group_val]
+      if (length(y_group) > 0) {
+        # Compute density with any density-specific arguments
+        density_obj <- do.call(density, c(list(x = y_group), density_params))
+        density_list[[i]] <- density_obj
+        y_ranges[[i]] <- range(density_obj$x)
+        y_density_max[[i]] <- max(density_obj$y)
+      }
+    }
+  
+  #11. Determine overall range for plotting
+  # Determine overall range for plotting
+    all_x <- unlist(lapply(density_list, function(d) range(d$x)))
+    all_y_density <- unlist(y_density_max)
+    x_min <- min(all_x, na.rm = TRUE)
+    x_max <- max(all_x, na.rm = TRUE)
+    x_range <- x_max - x_min
+    x_lim <- c(x_min - 0.05 * x_range, x_max + 0.05 * x_range)
+    y_max_density <- max(all_y_density, na.rm = TRUE)
+    y_lim_density <- c(0, y_max_density * 1.3)  # Add 30% space for legend
+
+  #12. Helper function: NULL coalescing
+  # Helper function for NULL coalescing
+    `%||%` <- function(x, y) if (is.null(x)) y else x
+  
+  #13. Plot first density to set up the plot
+  # Plot first density to set up the plot
+    if (length(density_list) > 0) {
+      first_density <- density_list[[1]]
+    
+    #14. Get parameters for first group
+    # Get parameters for first group
+      col1 <- get_param("col", 1) %||% default_colors[1]
+      lwd1 <- get_param("lwd", 1) %||% 4  # Default lwd=4
+      lty1 <- get_param("lty", 1) %||% 1
+      type1 <- get_param("type", 1) %||% "l"
+      pch1 <- get_param("pch", 1)
+      
+    #15. Build plot arguments
+    # Build plot arguments
+    # Set main title if not provided
+      if (!"main" %in% names(plot_params)) {
+        main_title <- paste0("Comparing Distribution of '", y_name, "' by '", x_name, "'")
+      } else {
+        main_title <- plot_params$main
+      }
+    # Set font and size for main title if not provided
+      font_main <- if ("font.main" %in% names(plot_params)) plot_params$font.main else 2
+      cex_main <- if ("cex.main" %in% names(plot_params)) plot_params$cex.main else 1.3
+    
+    # Set xlab if not provided
+      xlab_title <- if ("xlab" %in% names(plot_params)) plot_params$xlab else y_name
+    
+    # Set ylab if not provided
+      ylab_title <- if ("ylab" %in% names(plot_params)) plot_params$ylab else "Density"
+    
+    # Set default ylim if not provided
+      if (!"ylim" %in% names(plot_params)) {
+        default_ylim <- y_lim_density
+        default_ylim[2]=default_ylim[2]*1.15
+      } else {
+        default_ylim <- plot_params$ylim
+      }
+    
+    # Set default xlim if not provided
+      if (!"xlim" %in% names(plot_params)) {
+        default_xlim <- x_lim
+      } else {
+        default_xlim <- plot_params$xlim
+      }
+    
+    # Remove vectorized parameters and data from plot_params for plot()
+    # Also remove xlab, ylab, main, xlim, ylim since we handle them separately
+    vectorized_params <- c("col", "lwd", "lty", "type", "pch", "data")
+    plot_params_to_remove <- c(vectorized_params, "xlab", "ylab", "main", "xlim", "ylim", "font.main", "cex.main")
+    plot_params[plot_params_to_remove] <- NULL
+    
+    plot_args <- list(x = first_density, 
+                      col = col1, lwd = lwd1, lty = lty1, type = type1,
+                      xlab = xlab_title, 
+                      ylab = ylab_title,
+                      main = main_title,
+                      font.main = font_main,
+                      cex.main = cex_main,
+                      xlim = default_xlim,
+                      ylim = default_ylim,
+                      font.lab = 2, cex.lab = 1.2, las = 1)
+    if (!is.null(pch1)) plot_args$pch <- pch1
+    
+    #16. Set up plot
+      # Set up plot
+      do.call(plot, c(plot_args, plot_params))
+    
+    #17. Add remaining densities
+      # Add remaining densities
+      if (length(density_list) > 1) {
+        for (i in 2:length(density_list)) {
+          density_obj <- density_list[[i]]
+          
+          # Get parameters for this group
+          coli <- get_param("col", i) %||% default_colors[i]
+          lwdi <- get_param("lwd", i) %||% 4  # Default lwd=4
+          ltyi <- get_param("lty", i) %||% 1
+          typei <- get_param("type", i) %||% "l"
+          pchi <- get_param("pch", i)
+          
+          # Build lines arguments
+          lines_args <- list(x = density_obj, 
+                            col = coli, lwd = lwdi, lty = ltyi, type = typei)
+          if (!is.null(pchi)) lines_args$pch <- pchi
+          
+          do.call(lines, lines_args)
+        }
+      }
+    
+    #18. Add points at y=0 and x=mean with labels
+      # Add points at y=0 and x=mean for each group, with mean labels above
+      for (i in seq_along(density_list)) {
+        group_val <- unique_x[i]
+        y_group <- y[x == group_val]
+        group_mean <- mean(y_group, na.rm = TRUE)
+        
+        # Get color for this group
+        coli <- get_param("col", i) %||% default_colors[i]
+        
+        # Add point at (mean, 0)
+        points(x = group_mean, y = 0, pch = 16, col = coli)
+        
+        # Add mean label above the point (pos=3 means above)
+        # Format: "M" on top line, mean value on bottom line
+        mean_label <- paste0("M\n", round(group_mean, 2))
+        text(x = group_mean, y = 0, labels = mean_label, 
+             pos = 3, col = coli, cex = 0.8, font = 2)
+      }
+    
+    #19. Add legend
+      # Add legend on top with title showing x variable name
+      # Calculate means and sample sizes for each group
+      legend_cols <- sapply(1:length(density_list), function(i) get_param("col", i) %||% default_colors[i])
+      legend_lwds <- sapply(1:length(density_list), function(i) get_param("lwd", i) %||% 4)
+      legend_ltys <- sapply(1:length(density_list), function(i) get_param("lty", i) %||% 1)
+      
+      # Create legend labels with group name and sample size (mean removed)
+      legend_labels <- character(length(density_list))
+      for (i in seq_along(density_list)) {
+        group_val <- unique_x[i]
+        y_group <- y[x == group_val]
+        group_n <- length(y_group)
+        
+        # Format: group_name\nN=sample_size
+        legend_labels[i] <- paste0(x_name, "='", as.character(group_val), "'\n",
+                                   "N=", group_n)
+      }
+      
+      legend("top", legend = legend_labels, 
+             col = legend_cols, lwd = legend_lwds, lty = legend_ltys,
+             horiz = TRUE, bty = "n")
+    
+    #20. Perform KS test (if 2 groups)
+    # If exactly 2 groups, perform KS test
+      if (n_groups == 2) {
+        # Get data for both groups
+        y1 <- y[x == unique_x[1]]
+        y2 <- y[x == unique_x[2]]
+        
+        # Kolmogorov-Smirnov test (capture warnings about ties)
+        ks_test <- withCallingHandlers(
+          ks.test(y1, y2),
+          warning = function(w) {
+            if (grepl("p-value will be approximate in the presence of ties", w$message, ignore.case = TRUE)) {
+              warnings_list$ks_ties <<- w$message
+              invokeRestart("muffleWarning")
+            }
+          }
+        )
+        ks_test_result <- ks_test
+        ks_d <- round(ks_test$statistic, 3)
+        ks_p <- format.pvalue(ks_test$p.value, include_p = TRUE)
+        
+        # Add KS test results in bottom right corner
+          usr <- par("usr")
+          x_range <- usr[2] - usr[1]
+          y_range <- usr[4] - usr[3]
+        # Format KS p-value (format.pvalue with include_p=TRUE gives "p = .05")
+          ks_p_formatted <- format.pvalue(ks_test$p.value, include_p = TRUE)
+        # Format KS results: "Kolmogorov-Smirnov\nD = xx\np = p"
+        # format.pvalue already includes "p = ", so we use it directly
+          ks_values <- paste0("Kolmogorov-Smirnov\nD = ", ks_d, "\n", ks_p_formatted)
+        # Position in bottom right corner
+          text(x = usr[2] - 0.02 * x_range, y = usr[3] + 0.02 * y_range, 
+               labels = ks_values,
+               adj = c(1, 0), cex = 0.8, font = 1)
+      }
+  }
+  
+  #21. Return densities and test results
+  # Return densities and test results
+    names(density_list) <- as.character(unique_x)
+  
+  # Build return list
+    result <- list(densities = density_list)
+  
+  # Add test results if 2 groups
+    if (n_groups == 2) {
+      result$ks_test <- ks_test_result
+    }
+  
+  # Add warnings if any were captured
+    if (length(warnings_list) > 0) {
+      result$warnings <- warnings_list
+    }
+  
+  invisible(result)
+}
+
