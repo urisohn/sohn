@@ -62,7 +62,7 @@ text2(5, 5, "Red Text", col = "red", bg = "white")
 </details>
 
 <details>
-<summary><code>resize_images()</code>: Saves images to PNG with a specified width. As input it accepts (SVG, PDF, EPS, JPG, JPEG, TIF, TIFF, BMP, PNG). Saves to subdirectory '/resized' within input folder</summary>
+<summary><code>resize_images()</code>: Saves any image format as PNG, with a specified width. </summary>
 
 ```r
 # Resize all images in a folder to 800px width
