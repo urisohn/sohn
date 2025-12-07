@@ -63,7 +63,7 @@ scatter.gam(x, y)
 </details>
 
 <details>
-<summary><code>text2()</code>: Adds to text(): align='center' , bg='yellow'
+<summary><code>text2()</code>: Adds to text(): align='center' , bg='yellow'</summary>
 
 ```r
 plot(1:10, 1:10, type = "n")
