@@ -8,6 +8,9 @@
 #' @param x A vector (factor, character, or numeric) used to group the data,
 #'   or a column name if \code{data} is provided.
 #' @param data An optional data frame containing the variables \code{y} and \code{x}.
+#' @param show.means Logical. If TRUE (default), shows vertical segments at mean values
+#'   for 2-3 groups. For 2 groups, low mean uses pos=2 and high mean uses pos=4.
+#'   For 3 groups, mid mean uses pos=3. For 4+ groups, vertical segments are not shown.
 #' @param ... Additional arguments passed to plotting functions. Can be scalars
 #'   (applied to all groups) or vectors (applied element-wise to each group).
 #'   Common parameters include \code{col}, \code{lwd}, \code{lty}, \code{pch},
@@ -91,9 +94,10 @@ density.by <- function(y, x, data = NULL, ...) {
   #16. Set up plot
   #17. Add remaining densities
   #18. Add points at y=0 and x=mean with labels
-  #19. Add legend
-  #20. Perform KS test (if 2 groups)
-  #21. Return densities and test results
+  #19. Add vertical segments at means (if show.means=TRUE and 2-3 groups)
+  #20. Add legend
+  #21. Perform KS test (if 2 groups)
+  #22. Return densities and test results
   
   #1. Capture variable names for labels
   # Capture y name for xlab (before potentially overwriting y)
@@ -115,6 +119,10 @@ density.by <- function(y, x, data = NULL, ...) {
   #2. Extract and handle parameters
   # Extract plotting parameters from ...
     dots <- list(...)
+    
+    # Extract show.means parameter
+    show_means <- if ("show.means" %in% names(dots)) dots$show.means else TRUE
+    dots$show.means <- NULL  # Remove from dots so it doesn't get passed to plot functions
   
   #3. Handle data frame input
   # Handle data frame if provided
@@ -352,7 +360,63 @@ density.by <- function(y, x, data = NULL, ...) {
              pos = 3, col = coli, cex = 0.8, font = 2)
       }
     
-    #19. Add legend
+    #19. Add vertical segments at means (if show.means=TRUE and 2-3 groups)
+      # Add vertical segments at mean values
+      if (show_means && n_groups >= 2 && n_groups <= 3) {
+        # Calculate all means
+        all_means <- numeric(n_groups)
+        for (i in seq_along(density_list)) {
+          group_val <- unique_x[i]
+          y_group <- y[x == group_val]
+          all_means[i] <- mean(y_group, na.rm = TRUE)
+        }
+        
+        # Sort means to determine low/mid/high
+        sorted_indices <- order(all_means)
+        sorted_means <- all_means[sorted_indices]
+        
+        # Get maximum density value for segment height
+        y_max_segment <- y_max_density
+        
+        # Add segments and labels based on number of groups
+        if (n_groups == 2) {
+          # Low mean: pos=2 (left), High mean: pos=4 (right)
+          low_idx <- sorted_indices[1]
+          high_idx <- sorted_indices[2]
+          
+          # Low mean segment
+          coli_low <- get_param("col", low_idx) %||% default_colors[low_idx]
+          segments(x0 = sorted_means[1], y0 = 0, x1 = sorted_means[1], y1 = y_max_segment,
+                   col = coli_low, lwd = 2)
+          text(x = sorted_means[1], y = y_max_segment, 
+               labels = paste0("M=", round(sorted_means[1], 2)),
+               pos = 2, col = coli_low, cex = 0.8, font = 2)
+          
+          # High mean segment
+          coli_high <- get_param("col", high_idx) %||% default_colors[high_idx]
+          segments(x0 = sorted_means[2], y0 = 0, x1 = sorted_means[2], y1 = y_max_segment,
+                   col = coli_high, lwd = 2)
+          text(x = sorted_means[2], y = y_max_segment, 
+               labels = paste0("M=", round(sorted_means[2], 2)),
+               pos = 4, col = coli_high, cex = 0.8, font = 2)
+          
+        } else if (n_groups == 3) {
+          # Mid mean: pos=3 (above)
+          low_idx <- sorted_indices[1]
+          mid_idx <- sorted_indices[2]
+          high_idx <- sorted_indices[3]
+          
+          # Mid mean segment only
+          coli_mid <- get_param("col", mid_idx) %||% default_colors[mid_idx]
+          segments(x0 = sorted_means[2], y0 = 0, x1 = sorted_means[2], y1 = y_max_segment,
+                   col = coli_mid, lwd = 2)
+          text(x = sorted_means[2], y = y_max_segment, 
+               labels = paste0("M=", round(sorted_means[2], 2)),
+               pos = 3, col = coli_mid, cex = 0.8, font = 2)
+        }
+      }
+    
+    #20. Add legend
       # Add legend on top with title showing x variable name
       # Calculate means and sample sizes for each group
       legend_cols <- sapply(1:length(density_list), function(i) get_param("col", i) %||% default_colors[i])
@@ -375,7 +439,7 @@ density.by <- function(y, x, data = NULL, ...) {
              col = legend_cols, lwd = legend_lwds, lty = legend_ltys,
              horiz = TRUE, bty = "n")
     
-    #20. Perform KS test (if 2 groups)
+    #21. Perform KS test (if 2 groups)
     # If exactly 2 groups, perform KS test
       if (n_groups == 2) {
         # Get data for both groups
@@ -412,7 +476,7 @@ density.by <- function(y, x, data = NULL, ...) {
       }
   }
   
-  #21. Return densities and test results
+  #22. Return densities and test results
   # Return densities and test results
     names(density_list) <- as.character(unique_x)
   
