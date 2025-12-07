@@ -36,7 +36,8 @@
 #' # Edge cases
 #' format.pvalue(c(0, 0.00005, 0.5, 0.99999, 1, NA))
 #'
-#' @export
+#' @name format.pvalue
+#' @export format.pvalue
 format.pvalue <- function(p, digits = 4, include_p = FALSE) {
   # Handle NA values
   is_na <- is.na(p)
