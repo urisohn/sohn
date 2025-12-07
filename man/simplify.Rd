@@ -30,4 +30,11 @@ simplification method.
 result <- t.test(rnorm(100), rnorm(100))
 simplify(result)
 
+# Simplify table output with variable names
+df <- data.frame(
+  smg1 = c(1, 2, 2, 1, 2),
+  coupled = c(0, 1, 0, 1, 1)
+)
+simplify(table(df$smg1 == 2, df$coupled))
+
 }
