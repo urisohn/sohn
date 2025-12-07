@@ -354,30 +354,31 @@ density.by <- function(y, x, data = NULL, ...) {
         points(x = group_mean, y = 0, pch = 16, col = coli)
       }
     
-    #19. Add vertical segments at means (if show.means=TRUE and 2-3 groups)
+    #19. Report means and t-test
+      
       # Add vertical segments at mean values
-      if (show_means && n_groups >= 2 && n_groups <= 3) {
-        # Calculate all means
-        all_means <- numeric(n_groups)
-        for (i in seq_along(density_list)) {
-          group_val <- unique_x[i]
-          y_group <- y[x == group_val]
-          all_means[i] <- mean(y_group, na.rm = TRUE)
-        }
+        if (show_means && n_groups >= 2 && n_groups <= 3) {
+          # Calculate all means
+          all_means <- numeric(n_groups)
+          for (i in seq_along(density_list)) {
+            group_val <- unique_x[i]
+            y_group <- y[x == group_val]
+            all_means[i] <- mean(y_group, na.rm = TRUE)
+          }
         
         # Sort means to determine low/mid/high
-        sorted_indices <- order(all_means)
-        sorted_means <- all_means[sorted_indices]
+          sorted_indices <- order(all_means)
+          sorted_means <- all_means[sorted_indices]
         
         # Get maximum density value for segment height (1.1 times highest density)
-        y_max_segment <- y_max_density * 1.1
-        
-        # Add segments and labels based on number of groups
-        if (n_groups == 2) {
-          # Low mean: pos=2 (left), High mean: pos=4 (right)
-          low_idx <- sorted_indices[1]
-          high_idx <- sorted_indices[2]
+          y_max_segment <- y_max_density * 1.1
           
+        # Add segments and labels based on number of groups
+          if (n_groups == 2) {
+            # Low mean: pos=2 (left), High mean: pos=4 (right)
+            low_idx <- sorted_indices[1]
+            high_idx <- sorted_indices[2]
+            
           # Get data for both groups
             y_low <- y[x == unique_x[low_idx]]
             y_high <- y[x == unique_x[high_idx]]
@@ -387,7 +388,7 @@ density.by <- function(y, x, data = NULL, ...) {
             t_stat <- round(t_test$statistic, 2)
             t_df <- round(t_test$parameter, 0)
             t_p <- format.pvalue(t_test$p.value, include_p = FALSE)
-            t_label <- paste0("t(", t_df, ") = ", t_stat, ",  p ", t_p)
+            t_label <- paste0("t-test: t(", t_df, ") = ", t_stat, ",  p ", t_p)
           
           # Low mean segment
             coli_low <- get_param("col", low_idx) %||% default_colors[low_idx]
@@ -410,10 +411,10 @@ density.by <- function(y, x, data = NULL, ...) {
           # Get plot height and move up 3% of plot height
             usr <- par("usr")
             y_range <- usr[4] - usr[3]
-            y_offset <- y_range * 0.05
+            y_offset <- y_range * 0.03
             text(x =  mean(sorted_means), y = y_max_segment + y_offset, 
                  labels = t_label,
-                 col = "black", cex = 0.7, font = 1)
+                 col = "black", cex = .85, font = 1)
             
         } else if (n_groups == 3) {
           # Mid mean: pos=3 (above)
@@ -426,20 +427,7 @@ density.by <- function(y, x, data = NULL, ...) {
             y_mid <- y[x == unique_x[mid_idx]]
             y_high <- y[x == unique_x[high_idx]]
             
-          # Perform t-tests: low vs mid, mid vs high
-            t_test_low_mid <- t.test(y_low, y_mid)
-            t_test_mid_high <- t.test(y_mid, y_high)
-            
-          # Format t-test labels
-            t_stat_lm <- round(t_test_low_mid$statistic, 2)
-            t_df_lm <- round(t_test_low_mid$parameter, 0)
-            t_p_lm <- format.pvalue(t_test_low_mid$p.value, include_p = FALSE)
-            t_label_lm <- paste0("t(", t_df_lm, ")=", t_stat_lm, ", p=", t_p_lm)
-            
-            t_stat_mh <- round(t_test_mid_high$statistic, 2)
-            t_df_mh <- round(t_test_mid_high$parameter, 0)
-            t_p_mh <- format.pvalue(t_test_mid_high$p.value, include_p = FALSE)
-            t_label_mh <- paste0("t(", t_df_mh, ")=", t_stat_mh, ", p", t_p_mh)
+    
             
           # Mid mean segment only
             coli_mid <- get_param("col", mid_idx) %||% default_colors[mid_idx]
@@ -450,14 +438,7 @@ density.by <- function(y, x, data = NULL, ...) {
                  pos = 3, col = coli_mid, cex = 0.8, font = 2)
             
              
-          # Get plot height and move up 3% of plot height
-            usr <- par("usr")
-            y_range <- usr[4] - usr[3]
-            y_offset <- y_range * 0.03
-            t_label_combined <- paste0(t_label_lm, "\n", t_label_mh)
-            text(x = mean(sorted_means), y = y_max_segment + y_offset, 
-                 labels = t_label_combined,
-                 col = "black", cex = 0.7, font = 1)
+          
           }
         }
     
