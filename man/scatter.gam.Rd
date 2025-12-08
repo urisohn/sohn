@@ -37,9 +37,9 @@ default basis dimension.}
 
 \item{plot.dist}{Character string specifying how to plot the distribution of \code{x}
 underneath the scatter plot. Options: \code{NULL} (default, auto-select based on
-number of unique values), \code{"none"} (no distribution plot), \code{"fhist"}
-(always use \code{fhist()}), or \code{"hist"} (always use \code{hist()}).
-When \code{NULL}, uses \code{fhist()} if there are 25 or fewer unique values,
+number of unique values), \code{"none"} (no distribution plot), \code{"plot_freq"}
+(always use \code{plot_freq()}), or \code{"hist"} (always use \code{hist()}).
+When \code{NULL}, uses \code{plot_freq()} if there are 25 or fewer unique values,
 otherwise uses \code{hist()}.}
 
 \item{dot.pch}{Plotting character for data points when \code{data.dots = TRUE}.

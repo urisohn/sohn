@@ -21,34 +21,34 @@ Functions I often use and are not (sufficiently?) available in existing packages
 ### 📊 Graphing
 
 <details>
-<summary><code>cdf.by()</code>: CDF for multiple groups in one plot</summary>
+<summary><code>plot_cdf()</code>: CDF for multiple groups in one plot</summary>
 
 ```r
 y <- rnorm(100)
 x <- rep(c("A", "B"), 50)
-cdf.by(y, x)  # Uses default colors (red4, dodgerblue for 2 groups)
-cdf.by(y, x, col = c("red", "blue"))  # Custom colors
+plot_cdf(y, x)  # Uses default colors (red4, dodgerblue for 2 groups)
+plot_cdf(y, x, col = c("red", "blue"))  # Custom colors
 ```
 </details>
 
 <details>
-<summary><code>density.by()</code>: Density for multiple groups in one plot</summary>
+<summary><code>plot_density()</code>: Density for multiple groups in one plot</summary>
 
 ```r
 y <- rnorm(100)
 x <- rep(c("A", "B"), 50)
-density.by(y, x)  # Uses default colors (red4, dodgerblue for 2 groups)
-density.by(y, x, col = c("red", "blue"))  # Custom colors
-density.by(y, x, show.means = FALSE)  # Hide mean segments
+plot_density(y, x)  # Uses default colors (red4, dodgerblue for 2 groups)
+plot_density(y, x, col = c("red", "blue"))  # Custom colors
+plot_density(y, x, show.means = FALSE)  # Hide mean segments
 ```
 </details>
 
 <details>
-<summary><code>fhist()</code>: Frequency distribution without binning, with value labels</summary>
+<summary><code>plot_freq()</code>: Frequency distribution without binning, with value labels</summary>
 
 ```r
 x <- c(1, 1, 2, 2, 2, 5, 5)
-fhist(x)
+plot_freq(x)
 ```
 </details>
 

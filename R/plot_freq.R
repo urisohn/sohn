@@ -1,15 +1,15 @@
-#' Plot empirical distribution of a variable (histogram without binning)
+#' Plot frequencies of a variable, optionally by group (histogram without binning)
 #'
 #' Creates a frequency plot showing the frequency of every observed value,
 #' displaying the full range from minimum to maximum value.
 #'
 #' @param x A numeric vector of values to plot frequencies for.
-#' @param col Color for the frequency bars. Default is "dodgerblue".
+#' @param col Color for the bars. 
 #' @param lwd Line width for the frequency bars. Default is 9.
-#' @param value.labels Logical. If TRUE, displays frequencies on top of each line. Default is TRUE
-#' @param add Logical. If TRUE, adds to an existing plot instead of creating a new one. Default is FALSE.
-#' @param by A grouping variable. If specified, frequencies are computed separately for each group and plotted with different colors. Must have same length as x and 2 or 3 unique values.
-#' @param ... Pass on any other argument that's accepted by \code{plot()}.
+#' @param value.labels Logical. If TRUE, displays frequencies on top of each line. 
+#' @param add Logical. If TRUE, adds to an existing plot instead of creating a new one. 
+#' @param by A grouping variable (with 2 or 3 unique values). If specified, frequencies are computed separately for each group and plotted with different colors. 
+#' @param ... Pass on any argument accepted by \code{plot()} e.g., \code{xlab='x-axis'} , \code{main='Distribution of X'}
 #'
 #' @return Invisibly returns a data frame with values and their frequencies.
 #'
@@ -399,5 +399,8 @@ plot_freq <- function(x, freq=TRUE, col='dodgerblue',lwd=9, value.labels=TRUE, a
 
 # Alias for backward compatibility
 #' @export
-fhist <- plot_freq
+fhist <- function(...) {
+  message.col("The function fhist() is deprecated, please use plot_freq() instead going forward", col = "red", font = 2)
+  plot_freq(...)
+}
 

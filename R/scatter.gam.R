@@ -13,12 +13,12 @@
 #' @param k Optional integer specifying the basis dimension for the smooth term
 #'   in the GAM model (passed to \code{s(x, k=k)}). If NULL (default), uses the
 #'   default basis dimension.
-#' @param plot.dist Character string specifying how to plot the distribution of \code{x}
-#'   underneath the scatter plot. Options: \code{NULL} (default, auto-select based on
-#'   number of unique values), \code{"none"} (no distribution plot), \code{"fhist"}
-#'   (always use \code{plot_freq()}), or \code{"hist"} (always use \code{hist()}).
-#'   When \code{NULL}, uses \code{plot_freq()} if there are 25 or fewer unique values,
-#'   otherwise uses \code{hist()}.
+  #' @param plot.dist Character string specifying how to plot the distribution of \code{x}
+  #'   underneath the scatter plot. Options: \code{NULL} (default, auto-select based on
+  #'   number of unique values), \code{"none"} (no distribution plot), \code{"plot_freq"}
+  #'   (always use \code{plot_freq()}), or \code{"hist"} (always use \code{hist()}).
+  #'   When \code{NULL}, uses \code{plot_freq()} if there are 25 or fewer unique values,
+  #'   otherwise uses \code{hist()}.
 #' @param dot.pch Plotting character for data points when \code{data.dots = TRUE}.
 #'   Default is 16 (filled circle).
 #' @param dot.col Color for data points when \code{data.dots = TRUE}. Default is
@@ -156,19 +156,19 @@ scatter.gam <- function(x, y, data.dots = FALSE, three.dots = FALSE, data = NULL
   
   # Determine if we need to plot distribution and which method to use
   plot_distribution <- is.null(plot.dist) || (plot.dist != "none")
-  use_fhist <- FALSE
+  use_plot_freq <- FALSE
   use_hist <- FALSE
   
   if (plot_distribution) {
-    if (!is.null(plot.dist) && plot.dist == "fhist") {
-      use_fhist <- TRUE
+    if (!is.null(plot.dist) && plot.dist == "plot_freq") {
+      use_plot_freq <- TRUE
     } else if (!is.null(plot.dist) && plot.dist == "hist") {
       use_hist <- TRUE
     } else {
       # Auto-select (when plot.dist is NULL): use plot_freq if 25 or fewer unique values
       n_unique <- length(unique(x))
       if (n_unique <= 25) {
-        use_fhist <- TRUE
+        use_plot_freq <- TRUE
       } else {
         use_hist <- TRUE
       }
@@ -291,7 +291,7 @@ scatter.gam <- function(x, y, data.dots = FALSE, three.dots = FALSE, data = NULL
     if ("cex.lab" %in% names(plot_args)) dist_plot_args$cex.lab <- plot_args$cex.lab
     if ("las" %in% names(plot_args)) dist_plot_args$las <- plot_args$las
     
-    if (use_fhist) {
+    if (use_plot_freq) {
       # Use plot_freq() for distribution plot of x
       do.call(plot_freq, c(list(x = x), dist_plot_args))
     } else if (use_hist) {
