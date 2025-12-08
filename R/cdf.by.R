@@ -65,27 +65,27 @@
 #' # Basic usage
 #' y <- rnorm(100)
 #' x <- rep(c("A", "B", "C"), c(30, 40, 30))
-#' cdf.by(y, x)
+#' plot_cdf(y, x)
 #'
 #' # With custom colors (scalar - same for all)
-#' cdf.by(y, x, col = "blue")
+#' plot_cdf(y, x, col = "blue")
 #'
 #' # With custom colors (vector - different for each group)
-#' cdf.by(y, x, col = c("red", "green", "blue"))
+#' plot_cdf(y, x, col = c("red", "green", "blue"))
 #'
 #' # Multiple parameters
-#' cdf.by(y, x, col = c("red", "green", "blue"), lwd = c(1, 2, 3))
+#' plot_cdf(y, x, col = c("red", "green", "blue"), lwd = c(1, 2, 3))
 #'
 #' # With line type and point character
-#' cdf.by(y, x, col = c("red", "green", "blue"), lty = c(1, 2, 3), lwd = 2)
+#' plot_cdf(y, x, col = c("red", "green", "blue"), lty = c(1, 2, 3), lwd = 2)
 #'
 #' # Using data frame
 #' df <- data.frame(value = rnorm(100), group = rep(c("A", "B"), 50))
-#' cdf.by(value, group, data = df)
-#' cdf.by(value, group, data = df, col = c("red", "blue"))
+#' plot_cdf(value, group, data = df)
+#' plot_cdf(value, group, data = df, col = c("red", "blue"))
 #'
 #' @export
-cdf.by <- function(y, x, data = NULL, ...) {
+plot_cdf <- function(y, x, data = NULL, ...) {
   # Capture y name for xlab (before potentially overwriting y)
   y_name_raw <- deparse(substitute(y))
   y_name <- if (grepl("\\$", y_name_raw)) {
@@ -133,8 +133,8 @@ cdf.by <- function(y, x, data = NULL, ...) {
   n.nax = sum(isnax)
   n.nay = sum(isnay)
   
-  if (n.nax>0) message.col("sohn::cdf.by() says: dropped ",n.nax," observations with missing '",x_name_raw,"' values",col='red4')
-  if (n.nay>0) message.col("sohn::cdf.by() says: dropped ",n.nay," observations with missing '",y_name_raw,"' values",col='red4')
+  if (n.nax>0) message.col("sohn::plot_cdf() says: dropped ",n.nax," observations with missing '",x_name_raw,"' values",col='red4')
+  if (n.nay>0) message.col("sohn::plot_cdf() says: dropped ",n.nay," observations with missing '",y_name_raw,"' values",col='red4')
   
   # Get unique groups and their order
   unique_x <- unique(x)
@@ -311,9 +311,9 @@ cdf.by <- function(y, x, data = NULL, ...) {
         # Quantile regression tests at 25th, 50th, and 75th percentiles
         if (requireNamespace("quantreg", quietly = TRUE)) {
         # Show message about independence assumption (only once per session)
-        if (is.null(getOption("sohn.cdf.by.message.shown"))) {
+        if (is.null(getOption("sohn.plot_cdf.message.shown"))) {
           message("The p-values are done with quantile regressions that assume all observations are independent")
-          options(sohn.cdf.by.message.shown = TRUE)
+          options(sohn.plot_cdf.message.shown = TRUE)
         }
         
         # Create data frame for quantile regression

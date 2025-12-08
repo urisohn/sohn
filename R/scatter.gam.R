@@ -16,8 +16,8 @@
 #' @param plot.dist Character string specifying how to plot the distribution of \code{x}
 #'   underneath the scatter plot. Options: \code{NULL} (default, auto-select based on
 #'   number of unique values), \code{"none"} (no distribution plot), \code{"fhist"}
-#'   (always use \code{fhist()}), or \code{"hist"} (always use \code{hist()}).
-#'   When \code{NULL}, uses \code{fhist()} if there are 25 or fewer unique values,
+#'   (always use \code{plot_freq()}), or \code{"hist"} (always use \code{hist()}).
+#'   When \code{NULL}, uses \code{plot_freq()} if there are 25 or fewer unique values,
 #'   otherwise uses \code{hist()}.
 #' @param dot.pch Plotting character for data points when \code{data.dots = TRUE}.
 #'   Default is 16 (filled circle).
@@ -165,7 +165,7 @@ scatter.gam <- function(x, y, data.dots = FALSE, three.dots = FALSE, data = NULL
     } else if (!is.null(plot.dist) && plot.dist == "hist") {
       use_hist <- TRUE
     } else {
-      # Auto-select (when plot.dist is NULL): use fhist if 25 or fewer unique values
+      # Auto-select (when plot.dist is NULL): use plot_freq if 25 or fewer unique values
       n_unique <- length(unique(x))
       if (n_unique <= 25) {
         use_fhist <- TRUE
@@ -277,7 +277,7 @@ scatter.gam <- function(x, y, data.dots = FALSE, three.dots = FALSE, data = NULL
     }
     
     # Prepare distribution plot arguments - only pass essential arguments
-    # fhist() and hist() have their own defaults, so we only override what's necessary
+    # plot_freq() and hist() have their own defaults, so we only override what's necessary
     dist_plot_args <- list(
       xlab = x_name,
       ylab = "Frequency",
@@ -286,14 +286,14 @@ scatter.gam <- function(x, y, data.dots = FALSE, three.dots = FALSE, data = NULL
     )
     
     # Optionally pass through some formatting arguments if they were specified
-    # but let fhist/hist use their defaults otherwise
+      # but let plot_freq/hist use their defaults otherwise
     if ("font.lab" %in% names(plot_args)) dist_plot_args$font.lab <- plot_args$font.lab
     if ("cex.lab" %in% names(plot_args)) dist_plot_args$cex.lab <- plot_args$cex.lab
     if ("las" %in% names(plot_args)) dist_plot_args$las <- plot_args$las
     
     if (use_fhist) {
-      # Use fhist() for distribution plot of x
-      do.call(fhist, c(list(x = x), dist_plot_args))
+      # Use plot_freq() for distribution plot of x
+      do.call(plot_freq, c(list(x = x), dist_plot_args))
     } else if (use_hist) {
       # Use hist() for distribution plot of x
       do.call(hist, c(list(x = x), dist_plot_args))

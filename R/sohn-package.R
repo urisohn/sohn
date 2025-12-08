@@ -11,9 +11,9 @@
 #' @section Graphing:
 #' \itemize{
 #'   \item \code{\link{scatter.gam}}: Scatter plots with GAM smooth lines
-#'   \item \code{\link{cdf.by}}: Plot empirical cumulative distribution functions by group
-#'   \item \code{\link{density.by}}: Plot density functions by group
-#'   \item \code{\link{fhist}}: Frequency histograms without binning
+#'   \item \code{\link{plot_cdf}}: Plot empirical cumulative distribution functions by group
+#'   \item \code{\link{plot_density}}: Plot density functions by group
+#'   \item \code{\link{plot_freq}}: Frequency histograms without binning
 #' }
 #'
 #' @section Statistical Analyses:

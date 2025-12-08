@@ -3,7 +3,7 @@
 #' Get default colors for plotting
 #'
 #' Returns a vector of colors based on the number of groups.
-#' This is an internal utility function used by cdf.by() and density.by().
+#' This is an internal utility function used by plot_cdf() and plot_density().
 #'
 #' @param k Number of colors to return
 #' @return A character vector of color names

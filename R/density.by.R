@@ -62,27 +62,27 @@
 #' # Basic usage
 #' y <- rnorm(100)
 #' x <- rep(c("A", "B", "C"), c(30, 40, 30))
-#' density.by(y, x)
+#' plot_density(y, x)
 #'
 #' # With custom colors (scalar - same for all)
-#' density.by(y, x, col = "blue")
+#' plot_density(y, x, col = "blue")
 #'
 #' # With custom colors (vector - different for each group)
-#' density.by(y, x, col = c("red", "green", "blue"))
+#' plot_density(y, x, col = c("red", "green", "blue"))
 #'
 #' # Multiple parameters
-#' density.by(y, x, col = c("red", "green", "blue"), lwd = c(1, 2, 3))
+#' plot_density(y, x, col = c("red", "green", "blue"), lwd = c(1, 2, 3))
 #'
 #' # With line type
-#' density.by(y, x, col = c("red", "green", "blue"), lty = c(1, 2, 3), lwd = 2)
+#' plot_density(y, x, col = c("red", "green", "blue"), lty = c(1, 2, 3), lwd = 2)
 #'
 #' # Using data frame
 #' df <- data.frame(value = rnorm(100), group = rep(c("A", "B"), 50))
-#' density.by(value, group, data = df)
-#' density.by(value, group, data = df, col = c("red", "blue"))
+#' plot_density(value, group, data = df)
+#' plot_density(value, group, data = df, col = c("red", "blue"))
 #'
-#' @export density.by
-density.by <- function(y, x, data = NULL, ...) {
+#' @export
+plot_density <- function(y, x, data = NULL, ...) {
   #OUTLINE
   #1. Capture variable names for labels
   #2. Extract and handle parameters
@@ -161,8 +161,8 @@ density.by <- function(y, x, data = NULL, ...) {
     n.nax = sum(isnax)
     n.nay = sum(isnay)
     
-    if (n.nax>0) message.col("sohn::density.by() says: dropped ",n.nax," observations with missing '",x_name_raw,"' values",col='red4')
-    if (n.nay>0) message.col("sohn::density.by() says: dropped ",n.nay," observations with missing '",y_name_raw,"' values",col='red4')
+    if (n.nax>0) message.col("sohn::plot_density() says: dropped ",n.nax," observations with missing '",x_name_raw,"' values",col='red4')
+    if (n.nay>0) message.col("sohn::plot_density() says: dropped ",n.nay," observations with missing '",y_name_raw,"' values",col='red4')
   
   #5. Get unique groups
     unique_x <- unique(x)
