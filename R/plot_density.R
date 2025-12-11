@@ -4,9 +4,9 @@
 #' variable.
 #'
 #' @param y A numeric vector of values to compute densities for, or a column name
-#'   if \code{data} is provided.
+#'   (character string or unquoted) if \code{data} is provided.
 #' @param x A vector (factor, character, or numeric) used to group the data,
-#'   or a column name if \code{data} is provided.
+#'   or a column name (character string or unquoted) if \code{data} is provided.
 #' @param data An optional data frame containing the variables \code{y} and \code{x}.
 #' @param show.means Logical. If TRUE (default), shows vertical segments at mean values
 #'   for 2-3 groups. For 2 groups, low mean uses pos=2 and high mean uses pos=4.
@@ -79,6 +79,7 @@
 #' # Using data frame
 #' df <- data.frame(value = rnorm(100), group = rep(c("A", "B"), 50))
 #' plot_density(value, group, data = df)
+#' plot_density("value", "group", data = df)  # quoted column names also work
 #' plot_density(value, group, data = df, col = c("red", "blue"))
 #'
 #' @export
@@ -110,6 +111,8 @@ plot_density <- function(y, x, data = NULL, ...) {
   #1. Capture variable names for labels
   # Capture y name for xlab (before potentially overwriting y)
     y_name_raw <- deparse(substitute(y))
+    # Remove quotes if present (handles both y = "col" and y = col)
+    y_name_raw <- gsub('^"|"$', '', y_name_raw)
     y_name <- if (grepl("\\$", y_name_raw)) {
       strsplit(y_name_raw, "\\$")[[1]][length(strsplit(y_name_raw, "\\$")[[1]])]
     } else {
@@ -118,6 +121,8 @@ plot_density <- function(y, x, data = NULL, ...) {
   
   # Capture x name for legend title (before potentially overwriting x)
     x_name_raw <- deparse(substitute(x))
+    # Remove quotes if present (handles both x = "col" and x = col)
+    x_name_raw <- gsub('^"|"$', '', x_name_raw)
     x_name <- if (grepl("\\$", x_name_raw)) {
       strsplit(x_name_raw, "\\$")[[1]][length(strsplit(x_name_raw, "\\$")[[1]])]
     } else {
@@ -151,6 +156,11 @@ plot_density <- function(y, x, data = NULL, ...) {
         y <- data[[y_name_raw]]
         x <- data[[x_name_raw]]
     }
+  
+  # Validate that y is a numeric vector
+  if (!is.numeric(y) || !is.vector(y)) {
+    stop(sprintf("'y' must be a numeric vector, and '%s' is not", y_name_raw))
+  }
   
   #4. Drop missing data
     isnax=is.na(x)
