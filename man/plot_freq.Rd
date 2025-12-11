@@ -6,17 +6,21 @@
 \usage{
 plot_freq(
   x,
+  by = NULL,
   freq = TRUE,
   col = "dodgerblue",
   lwd = 9,
+  width = NULL,
   value.labels = TRUE,
   add = FALSE,
-  by = NULL,
+  data = NULL,
   ...
 )
 }
 \arguments{
-\item{x}{A numeric vector of values to plot frequencies for.}
+\item{x}{A numeric vector of values to plot frequencies for, or a column name (character string) if \code{data} is provided.}
+
+\item{by}{A grouping variable (with 2 or 3 unique values). If specified, frequencies are computed separately for each group and plotted with different colors. Can be a vector or a column name (character string) if \code{data} is provided.}
 
 \item{col}{Color for the bars.}
 
@@ -26,7 +30,7 @@ plot_freq(
 
 \item{add}{Logical. If TRUE, adds to an existing plot instead of creating a new one.}
 
-\item{by}{A grouping variable (with 2 or 3 unique values). If specified, frequencies are computed separately for each group and plotted with different colors.}
+\item{data}{Optional data frame containing the variables \code{x} and optionally \code{by}.}
 
 \item{...}{Pass on any argument accepted by \code{plot()} e.g., \code{xlab='x-axis'} , \code{main='Distribution of X'}}
 }
@@ -54,5 +58,10 @@ plot_freq(x, col = "steelblue", xlab = "Value", ylab = "Frequency",ylim=c(0,7))
 # Add to an existing plot
 plot_freq(x, col = "dodgerblue")
 plot_freq(x + 1, col = "red", add = TRUE)
+
+# Using a data frame
+df <- data.frame(value = c(1, 1, 2, 2, 2, 5, 5), group = c("A", "A", "A", "B", "B", "A", "B"))
+plot_freq(x = "value", data = df)
+plot_freq(x = value, by = group, data = df)  # unquoted column names also work
 
 }

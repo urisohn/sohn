@@ -4,16 +4,22 @@
 \alias{plot_density}
 \title{Plot density of a variable, by another variable}
 \usage{
-plot_density(y, x, data = NULL, ...)
+plot_density(y, x, data = NULL, show.t = TRUE, show.ks = TRUE, ...)
 }
 \arguments{
 \item{y}{A numeric vector of values to compute densities for, or a column name
-if \code{data} is provided.}
+(character string or unquoted) if \code{data} is provided.}
 
 \item{x}{A vector (factor, character, or numeric) used to group the data,
-or a column name if \code{data} is provided.}
+or a column name (character string or unquoted) if \code{data} is provided.}
 
 \item{data}{An optional data frame containing the variables \code{y} and \code{x}.}
+
+\item{show.t}{Logical. If TRUE (default), shows points at means, vertical segments,
+mean labels, and t-test results. If FALSE, none of these are displayed.}
+
+\item{show.ks}{Logical. If TRUE (default), shows Kolmogorov-Smirnov test results
+when there are exactly 2 groups. If FALSE, KS test results are not displayed.}
 
 \item{...}{Additional arguments passed to plotting functions. Can be scalars
 (applied to all groups) or vectors (applied element-wise to each group).
@@ -92,6 +98,7 @@ plot_density(y, x, col = c("red", "green", "blue"), lty = c(1, 2, 3), lwd = 2)
 # Using data frame
 df <- data.frame(value = rnorm(100), group = rep(c("A", "B"), 50))
 plot_density(value, group, data = df)
+plot_density("value", "group", data = df)  # quoted column names also work
 plot_density(value, group, data = df, col = c("red", "blue"))
 
 }
