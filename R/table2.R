@@ -27,8 +27,9 @@
 #'
 #' @details
 #' When tabulating two variables from a dataframe (e.g., \code{table2(df$x, df$y)}),
-#' the row and column names will include the variable names, formatted as
-#' "varname=value" instead of just "value".
+#' the variable names appear as dimension names in the table margins, while
+#' row and column labels show only the values. This creates a cleaner cross-tabulation
+#' format with variable names as headers.
 #'
 #' @examples
 #' # Create example data
@@ -56,6 +57,18 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
                   useNA = c("no", "ifany", "always"), 
                   dnn = NULL, deparse.level = 1, prop = NULL) {
   
+  # FUNCTION OUTLINE:
+  # 1. Validate and process useNA and exclude arguments
+  # 2. Capture function call expressions to extract variable names
+  # 3. Call base::table() to create the contingency table
+  # 4. Extract variable names from dataframe column references (df$var, df[["var"]], etc.)
+  # 5. FORMAT HEADERS: Set variable names as dimension names (appear in margins when printed)
+  # 6. FORMAT HEADERS: Keep row/column labels as values only (not "var=value")
+  # 7. Handle proportion calculations if prop argument is provided
+  # 8. Add marginal totals for proportion tables (Total rows/columns)
+  # 9. Return the enhanced table object
+  
+  # TASK 1: Validate and process useNA and exclude arguments
   # Match useNA argument to handle default properly
   useNA <- match.arg(useNA)
   
@@ -64,11 +77,11 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
     exclude <- if (useNA == "no") c(NA, NaN) else NULL
   }
   
-  # Capture the original call to detect dataframe column references
+  # TASK 2: Capture the original call to detect dataframe column references
   dots <- list(...)
   dot_expressions <- as.list(substitute(list(...)))[-1L]
   
-  # Call base table function
+  # TASK 3: Call base table function
   # Let base::table handle dnn default (it uses list.names internally)
   if (is.null(dnn)) {
     result <- base::table(..., exclude = exclude, useNA = useNA, 
@@ -78,6 +91,7 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
                          dnn = dnn, deparse.level = deparse.level)
   }
   
+  # TASK 4: Extract variable names from dataframe column references
   # Only enhance if we have exactly 2 dimensions and 2 arguments
   if (length(dim(result)) == 2 && length(dots) == 2) {
     var_names <- character(2)
@@ -121,25 +135,30 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
       }
     }
     
+    # TASK 5 & 6: FORMAT HEADERS - Set variable names and labels
     # If we found variable names, enhance the dimnames
     if (any(nchar(var_names) > 0)) {
       dimn <- dimnames(result)
       
-      # Enhance row names (first dimension)
-      if (nchar(var_names[1]) > 0 && !is.null(dimn[[1]])) {
-        dimn[[1]] <- paste0(var_names[1], "=", dimn[[1]])
+      # TASK 5: FORMAT HEADERS - Set variable names as dimension names
+      # These appear in margins when printed (column var on top, row var on left)
+      if (nchar(var_names[1]) > 0) {
+        names(dimn)[1] <- var_names[1]  # Row variable name (appears on left margin)
       }
       
-      # Enhance column names (second dimension)
-      if (nchar(var_names[2]) > 0 && !is.null(dimn[[2]])) {
-        dimn[[2]] <- paste0(var_names[2], "=", dimn[[2]])
+      if (nchar(var_names[2]) > 0) {
+        names(dimn)[2] <- var_names[2]  # Column variable name (appears on top margin)
       }
       
+      # TASK 6: FORMAT HEADERS - Keep row and column labels as just the values
+      # Row labels: dimn[[1]] contains just values (e.g., "A", "B", "C")
+      # Column labels: dimn[[2]] contains just values (e.g., "1", "2", "3")
+      # The variable names will appear in the margins via names(dimnames)
       dimnames(result) <- dimn
     }
   }
   
-  # Convert to proportions if requested
+  # TASK 7: Convert to proportions if requested
   if (!is.null(prop)) {
     # Convert character values to numeric
     if (is.character(prop)) {
@@ -162,6 +181,7 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
     # Get original dimnames before modification
     orig_dimn <- dimnames(result)
     
+    # TASK 8: Add marginal totals for proportion tables
     if (prop == 0) {
       # Overall proportions: divide by sum of all cells
       total_sum <- sum(result, na.rm = TRUE)
@@ -177,21 +197,20 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
         # Calculate column totals (marginal proportions for columns)
         col_totals <- colSums(result, na.rm = TRUE)
         
-        # Add summary row with column marginal proportions
+        # TASK 8: Add summary row with column marginal proportions
         summary_row <- matrix(col_totals, nrow = 1, ncol = n_cols)
         result <- rbind(result, summary_row)
-        dimn[[1]] <- c(dimn[[1]], "Total")
-        rownames(result) <- dimn[[1]]
+        dimn[[1]] <- c(dimn[[1]], "Total")  # Add "Total" to row labels
         
         # Calculate row totals (marginal proportions for rows)
         row_totals <- rowSums(result[1:n_rows, , drop = FALSE], na.rm = TRUE)
         
-        # Add summary column with row marginal proportions
+        # TASK 8: Add summary column with row marginal proportions
         summary_col <- matrix(c(row_totals, 1.0), nrow = n_rows + 1, ncol = 1)
         # Bottom right corner is 1.0 (100%) - sum of all proportions
         result <- cbind(result, summary_col)
-        dimn[[2]] <- c(dimn[[2]], "Total")
-        colnames(result) <- dimn[[2]]
+        dimn[[2]] <- c(dimn[[2]], "Total")  # Add "Total" to column labels
+        dimnames(result) <- dimn
       }
       
     } else if (prop == 1) {
@@ -202,14 +221,14 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
       result <- result / row_sums
       prop_type <- "row proportions"
       
-      # Add column with 100% for each row
+      # TASK 8: Add column with 100% for each row
       if (length(dim(result)) == 2) {
         n_rows <- nrow(result)
         dimn <- dimnames(result)
         summary_col <- matrix(1, nrow = n_rows, ncol = 1)  # 100% for each row
         result <- cbind(result, summary_col)
-        dimn[[2]] <- c(dimn[[2]], "Total")
-        colnames(result) <- dimn[[2]]
+        dimn[[2]] <- c(dimn[[2]], "Total")  # Add "Total" to column labels
+        dimnames(result) <- dimn
       }
       
     } else if (prop == 2) {
@@ -220,19 +239,28 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
       result <- sweep(result, 2, col_sums, "/")
       prop_type <- "column proportions"
       
-      # Add row with 100% for each column
+      # TASK 8: Add row with 100% for each column
       if (length(dim(result)) == 2) {
         n_cols <- ncol(result)
         dimn <- dimnames(result)
         summary_row <- matrix(1, nrow = 1, ncol = n_cols)  # 100% for each column
         result <- rbind(result, summary_row)
-        dimn[[1]] <- c(dimn[[1]], "Total")
-        rownames(result) <- dimn[[1]]
+        dimn[[1]] <- c(dimn[[1]], "Total")  # Add "Total" to row labels
+        dimnames(result) <- dimn
       }
     }
     
     # Show message
     message.col("sohn::table2() computed ",prop_type, col = "blue")
+  }
+  
+  # TASK 9: Return the enhanced table object
+  # Add class for custom printing if we have 2D table with variable names
+  if (length(dim(result)) == 2 && length(dots) == 2) {
+    dimn <- dimnames(result)
+    if (!is.null(names(dimn)) && any(nchar(names(dimn)) > 0)) {
+      class(result) <- c("table2", class(result))
+    }
   }
   
   return(result)
