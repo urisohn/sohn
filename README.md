@@ -141,18 +141,6 @@ t.test2(xs ~ by)  # Columns: a, b, a-b, SE_a-b, t, df, p.value, method, se_a, se
 ```
 </details>
 
-<details>
-<summary><code>simplify()</code>: Simplify table output with variable names in margins</summary>
-
-```r
-df <- data.frame(
-  smg1 = c(1, 2, 2, 1, 2),
-  coupled = c(0, 1, 0, 1, 1)
-)
-simplify(table(df$smg1 == 2, df$coupled))
-```
-</details>
-
 ### ✨ Formatting
 
 <details>

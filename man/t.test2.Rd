@@ -17,13 +17,13 @@ A dataframe (returned invisibly) with columns named after the variables
 }
 \description{
 Runs \code{\link[stats]{t.test}} and returns results as a dataframe
-while displaying simplified output matching \code{\link{simplify}}.
+while displaying simplified, readable output with variable names.
 }
 \details{
 This function:
 \itemize{
   \item Runs \code{t.test()} with the provided arguments
-  \item Displays output matching \code{simplify(t.test())}
+  \item Displays simplified, readable output with variable names
   \item Returns results as a dataframe (invisibly) instead of a list
 }
 

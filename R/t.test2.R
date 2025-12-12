@@ -34,25 +34,32 @@ simplify_ttest <- function(object, digits = 3, calling_env = NULL, ...) {
         env <- calling_env
       }
       
-      tryCatch({
+      # Check if variables are already provided (from t.test2)
+      if (!is.null(object$y_var) && !is.null(object$group_var)) {
+        # Variables already provided, use them
+        # (y_var and group_var are already set)
+      } else {
         # Try to get variables from the environment
-        y_var <- tryCatch(get(y_var_name, envir = env), error = function(e) NULL)
-        group_var <- tryCatch(get(group_var_name, envir = env), error = function(e) NULL)
-        
-        # If we got both variables and they have the same length, store them
-        if (!is.null(y_var) && !is.null(group_var) && 
-            length(y_var) > 0 && length(group_var) > 0 && 
-            length(y_var) == length(group_var)) {
-          object$y_var <- y_var
-          object$group_var <- group_var
-        } else {
+        tryCatch({
+          # Try to get variables from the environment
+          y_var <- tryCatch(get(y_var_name, envir = env), error = function(e) NULL)
+          group_var <- tryCatch(get(group_var_name, envir = env), error = function(e) NULL)
+          
+          # If we got both variables and they have the same length, store them
+          if (!is.null(y_var) && !is.null(group_var) && 
+              length(y_var) > 0 && length(group_var) > 0 && 
+              length(y_var) == length(group_var)) {
+            object$y_var <- y_var
+            object$group_var <- group_var
+          } else {
+            object$y_var <- NULL
+            object$group_var <- NULL
+          }
+        }, error = function(e) {
           object$y_var <- NULL
           object$group_var <- NULL
-        }
-      }, error = function(e) {
-        object$y_var <- NULL
-        object$group_var <- NULL
-      })
+        })
+      }
       
       # Calculate difference
       if (length(object$estimate) == 2) {
@@ -96,7 +103,7 @@ simplify_ttest <- function(object, digits = 3, calling_env = NULL, ...) {
 #' Enhanced t-test function
 #'
 #' Runs \code{\link[stats]{t.test}} and returns results as a dataframe
-#' while displaying simplified output matching \code{\link{simplify}}.
+#' while displaying simplified, readable output with variable names.
 #'
 #' @param ... Arguments passed to \code{\link[stats]{t.test}}
 #' @param digits Number of decimal places to display. Default is 3.
@@ -108,7 +115,7 @@ simplify_ttest <- function(object, digits = 3, calling_env = NULL, ...) {
 #' This function:
 #' \itemize{
 #'   \item Runs \code{t.test()} with the provided arguments
-#'   \item Displays output matching \code{simplify(t.test())}
+#'   \item Displays simplified, readable output with variable names
 #'   \item Returns results as a dataframe (invisibly) instead of a list
 #' }
 #'
@@ -149,7 +156,7 @@ t.test2 <- function(..., digits = 3) {
   # 3. Extract test results: means, test statistics, and method type
   # 4. EXTRACT COLUMN NAMES: Determine column names from variable names or group values
   # 5. CALCULATE STANDARD ERRORS: Extract original data to compute standard errors for each group
-  # 6. DISPLAY OUTPUT: Print simplified t-test results matching simplify() output
+  # 6. DISPLAY OUTPUT: Print simplified t-test results
   # 7. BUILD DATAFRAME: Create dataframe with dynamic column names based on variables/groups
   # 8. Return dataframe invisibly (only console output is visible)
   
@@ -208,6 +215,10 @@ t.test2 <- function(..., digits = 3) {
   }
   
   # TASK 5: CALCULATE STANDARD ERRORS - Extract original data to compute standard errors
+  # Variables to pass to simplify_ttest for display
+  extracted_y_var <- NULL
+  extracted_group_var <- NULL
+  
   # Try to extract data from the call for standard error calculation
   tryCatch({
     # Check if it's formula syntax (y ~ group)
@@ -228,6 +239,10 @@ t.test2 <- function(..., digits = 3) {
         y_var <- eval(formula[[2]], envir = calling_env)
         group_var <- eval(formula[[3]], envir = calling_env)
       }
+      
+      # Store extracted variables for simplify_ttest
+      extracted_y_var <- y_var
+      extracted_group_var <- group_var
       
       # Calculate standard errors for each group and get group values for column names
       unique_groups <- sort(unique(group_var))
@@ -312,9 +327,14 @@ t.test2 <- function(..., digits = 3) {
   
   # TASK 6: DISPLAY OUTPUT - Print simplified t-test results
   # Use simplify_ttest helper function to print console output
-  # Pass the calling environment so simplify_ttest can access original data for better formatting
+  # Pass the calling environment and extracted variables so simplify_ttest can display means
   # Add flag to show simple group names (just "a" instead of "When by==a")
   tt_result$show_simple_groups <- TRUE
+  # Pass extracted variables directly if we have them (handles df$var syntax)
+  if (!is.null(extracted_y_var) && !is.null(extracted_group_var)) {
+    tt_result$y_var <- extracted_y_var
+    tt_result$group_var <- extracted_group_var
+  }
   simplify_ttest(tt_result, digits = digits, calling_env = calling_env)
   
   # TASK 7: BUILD DATAFRAME - Create dataframe with dynamic column names based on variables/groups
