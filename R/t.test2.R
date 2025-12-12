@@ -1,0 +1,247 @@
+#' Enhanced t-test function
+#'
+#' Runs \code{\link[stats]{t.test}} and returns results as a dataframe
+#' while displaying simplified output matching \code{\link{simplify}}.
+#'
+#' @param ... Arguments passed to \code{\link[stats]{t.test}}
+#' @param digits Number of decimal places to display. Default is 3.
+#'
+#' @return A dataframe (returned invisibly) with columns named after the variables
+#'   or group values, plus: diff, t, df, p.value, se1, se2, method
+#'
+#' @details
+#' This function:
+#' \itemize{
+#'   \item Runs \code{t.test()} with the provided arguments
+#'   \item Displays output matching \code{simplify(t.test())}
+#'   \item Returns results as a dataframe (invisibly) instead of a list
+#' }
+#'
+#' The dataframe contains:
+#' \itemize{
+#'   \item Variable-named columns: For standard syntax (\code{t.test2(x1, x2)}),
+#'     columns are named after the variables (e.g., \code{x1}, \code{x2}).
+#'     For formula syntax (\code{t.test2(y ~ group, data=df)}), columns are
+#'     named after the group values (e.g., \code{low}, \code{high}).
+#'   \item diff: Difference of means (mean1 - mean2, NA for one-sample test)
+#'   \item t: t-statistic
+#'   \item df: Degrees of freedom
+#'   \item p.value: p-value
+#'   \item se1: Standard error of first group
+#'   \item se2: Standard error of second group (NA for one-sample test)
+#'   \item method: 'student' or 'welch'
+#' }
+#'
+#' @examples
+#' # Two-sample t-test
+#' men <- rnorm(100, mean = 5, sd = 1)
+#' women <- rnorm(100, mean = 4.8, sd = 1)
+#' t.test2(men, women)
+#'
+#' # Formula syntax
+#' data <- data.frame(y = rnorm(100), group = rep(c("A", "B"), 50))
+#' t.test2(y ~ group, data = data)
+#'
+#' @seealso \code{\link[stats]{t.test}}, \code{\link{simplify}}
+#'
+#' @export
+t.test2 <- function(..., digits = 3) {
+  
+  # FUNCTION OUTLINE:
+  # 1. Capture function call to extract variable names and original data
+  # 2. Call stats::t.test() to perform the t-test
+  # 3. Extract test results: means, test statistics, and method type
+  # 4. EXTRACT COLUMN NAMES: Determine column names from variable names or group values
+  # 5. CALCULATE STANDARD ERRORS: Extract original data to compute standard errors for each group
+  # 6. DISPLAY OUTPUT: Print simplified t-test results matching simplify() output
+  # 7. BUILD DATAFRAME: Create dataframe with dynamic column names based on variables/groups
+  # 8. Return dataframe invisibly (only console output is visible)
+  
+  # TASK 1: Capture function call to extract variable names and original data
+  # Use match.call to capture the original call expressions for variable name extraction
+    call_args <- match.call(expand.dots = TRUE)
+    calling_env <- parent.frame()
+  
+  # TASK 2: Call stats::t.test() to perform the t-test
+  # Pass all arguments through to stats::t.test()
+    tt_result <- stats::t.test(...)
+  
+  # TASK 3: Extract test results: means, test statistics, and method type
+  # Determine test type (Student vs Welch) from method string
+    is_welch <- grepl("Welch", tt_result$method, ignore.case = TRUE)
+    method_type <- if (is_welch) "welch" else "student"
+  
+  # Extract means (remove names to get plain numeric values)
+  # tt_result$estimate is a named vector, so convert to numeric to remove names
+    mean1 <- if (length(tt_result$estimate) >= 1) as.numeric(tt_result$estimate[1]) else NA_real_
+    mean2 <- if (length(tt_result$estimate) >= 2) as.numeric(tt_result$estimate[2]) else NA_real_
+  
+  # Calculate difference of means
+    diff <- if (!is.na(mean1) && !is.na(mean2)) mean1 - mean2 else NA_real_
+  
+  # Extract test statistics (convert to numeric to remove any names)
+    t_stat <- as.numeric(tt_result$statistic)
+    df <- as.numeric(tt_result$parameter)
+    p_value <- as.numeric(tt_result$p.value)
+  
+  # TASK 4: EXTRACT COLUMN NAMES - Determine column names from variable names or group values
+  # Initialize column names with defaults (will be overwritten if we can extract names)
+    col1_name <- "mean1"
+    col2_name <- "mean2"
+    se1 <- NA_real_
+    se2 <- NA_real_
+  
+  # Helper function to extract variable name from call expression
+  # Handles cases like df$x1 (extracts "x1") or just x1 (keeps "x1")
+  extract_var_name <- function(expr) {
+    expr_str <- deparse(expr, width.cutoff = 500)
+    # If it contains $, extract the part after the last $
+    if (grepl("\\$", expr_str)) {
+      # Extract everything after the last $ (e.g., "x1" from "df$x1")
+      var_name <- sub(".*\\$", "", expr_str)
+      # Remove any whitespace
+      var_name <- trimws(var_name)
+      return(var_name)
+    }
+    # Otherwise, return the expression as-is (trimmed)
+    return(trimws(expr_str))
+  }
+  
+  # TASK 5: CALCULATE STANDARD ERRORS - Extract original data to compute standard errors
+  # Try to extract data from the call for standard error calculation
+  tryCatch({
+    # Check if it's formula syntax (y ~ group)
+    if (length(call_args) >= 2 && is.call(call_args[[2]]) && 
+        as.character(call_args[[2]][[1]]) %in% c("~", "formula")) {
+      # TASK 4 & 5: Formula syntax - Extract group values for column names and calculate SEs
+      # Formula syntax: y ~ group
+      formula <- eval(call_args[[2]], envir = calling_env)
+      data_arg <- if ("data" %in% names(call_args)) eval(call_args$data, envir = calling_env) else NULL
+      
+      if (!is.null(data_arg)) {
+        # Extract variables from formula and data
+        y_var <- eval(formula[[2]], envir = data_arg)
+        group_var <- eval(formula[[3]], envir = data_arg)
+        
+        # Calculate standard errors for each group and get group values for column names
+        unique_groups <- sort(unique(group_var))
+        if (length(unique_groups) == 2) {
+          g1_data <- y_var[group_var == unique_groups[1]]
+          g2_data <- y_var[group_var == unique_groups[2]]
+          
+          # TASK 5: Calculate standard errors (sd / sqrt(n))
+          se1 <- sd(g1_data, na.rm = TRUE) / sqrt(length(g1_data))
+          se2 <- sd(g2_data, na.rm = TRUE) / sqrt(length(g2_data))
+          
+          # TASK 4: Use group values as column names (e.g., "low", "high")
+          col1_name <- as.character(unique_groups[1])
+          col2_name <- as.character(unique_groups[2])
+        }
+      }
+    } else {
+      # TASK 4 & 5: Standard syntax - Extract variable names for column names and calculate SEs
+      # Standard syntax: x, y or just x
+      # Extract x and y arguments (both values and expressions)
+      x_arg <- NULL
+      y_arg <- NULL
+      x_expr <- NULL
+      y_expr <- NULL
+      
+      # Find x and y in the call
+      # Check for named arguments first (x=..., y=...)
+      if ("x" %in% names(call_args)) {
+        x_arg <- eval(call_args$x, envir = calling_env)
+        x_expr <- call_args$x
+      }
+      
+      if ("y" %in% names(call_args)) {
+        y_arg <- eval(call_args$y, envir = calling_env)
+        y_expr <- call_args$y
+      }
+      
+      # If not found as named arguments, try positional arguments
+      # Skip first element (function name) and skip "digits" if it's a named argument
+      if (is.null(x_arg) && length(call_args) >= 2) {
+        arg2_name <- names(call_args)[2]
+        # Only process if it's a positional argument (empty name) or a named argument that's not "digits"
+        if ((is.null(arg2_name) || arg2_name == "") || 
+            (!is.null(arg2_name) && arg2_name != "" && arg2_name != "digits")) {
+          x_arg <- eval(call_args[[2]], envir = calling_env)
+          x_expr <- call_args[[2]]
+        }
+      }
+      
+      if (is.null(y_arg) && length(call_args) >= 3) {
+        arg3_name <- names(call_args)[3]
+        # Only process if it's a positional argument (empty name) or a named argument that's not "digits"
+        if ((is.null(arg3_name) || arg3_name == "") || 
+            (!is.null(arg3_name) && arg3_name != "" && arg3_name != "digits")) {
+          y_arg <- eval(call_args[[3]], envir = calling_env)
+          y_expr <- call_args[[3]]
+        }
+      }
+      
+      # TASK 4: Extract variable names for column names
+      if (!is.null(x_expr)) {
+        col1_name <- extract_var_name(x_expr)
+      }
+      
+      if (!is.null(y_expr)) {
+        col2_name <- extract_var_name(y_expr)
+      }
+      
+      # TASK 5: Calculate standard errors (sd / sqrt(n))
+      if (!is.null(x_arg) && is.numeric(x_arg)) {
+        se1 <- sd(x_arg, na.rm = TRUE) / sqrt(length(x_arg))
+      }
+      
+      if (!is.null(y_arg) && is.numeric(y_arg)) {
+        se2 <- sd(y_arg, na.rm = TRUE) / sqrt(length(y_arg))
+      }
+    }
+  }, error = function(e) {
+    # If we can't extract data, leave se1 and se2 as NA
+    # Column names will default to "mean1" and "mean2"
+    # This can happen in some edge cases
+  })
+  
+  # TASK 6: DISPLAY OUTPUT - Print simplified t-test results matching simplify() output
+  # Use simplify_ttest to print console output (matches simplify(t.test()) output)
+  # Pass the calling environment so simplify_ttest can access original data for better formatting
+  simplify_ttest(tt_result, digits = digits, calling_env = calling_env)
+  
+  # TASK 7: BUILD DATAFRAME - Create dataframe with dynamic column names based on variables/groups
+  # Build a list first, then convert to dataframe (creates 1-row dataframe automatically)
+  result_list <- list()
+  
+  # Add columns with dynamic names (variable names or group values)
+  result_list[[col1_name]] <- mean1
+  if (!is.na(mean2)) {
+    result_list[[col2_name]] <- mean2
+  }
+  
+  # Add difference column with dynamic name (var1-var2 format)
+  if (!is.na(mean2)) {
+    # For two-sample tests, use variable names in diff column name (e.g., "x1-x2")
+    diff_col_name <- paste0(col1_name, " - ", col2_name)
+    result_list[[diff_col_name]] <- diff
+  } else {
+    # For one-sample test, diff is NA, so use default name
+    result_list$diff <- diff
+  }
+  
+  # Add other test statistics columns
+  result_list$t <- t_stat
+  result_list$df <- df
+  result_list$p.value <- p_value
+  result_list$se1 <- se1
+  result_list$se2 <- se2
+  result_list$method <- method_type
+  
+  # Convert list to dataframe (creates a 1-row dataframe)
+  result_df <- as.data.frame(result_list, stringsAsFactors = FALSE)
+  
+  # TASK 8: Return dataframe invisibly (only console output is visible)
+  return(invisible(result_df))
+}
+

@@ -34,7 +34,7 @@ print.simplified_ttest <- function(x, ...) {
     # Check if we have the original data (from t.test2) or just estimates (from simplify)
     if (!is.null(x$group_var) && !is.null(x$y_var) && 
         length(x$group_var) > 0 && length(x$y_var) > 0) {
-      # We have original data - show "When cond==0" format
+      # We have original data - show "When cond==0" format or simple group names
       unique_groups <- sort(unique(x$group_var))
       if (length(unique_groups) == 2) {
         g1 <- unique_groups[1]
@@ -42,16 +42,32 @@ print.simplified_ttest <- function(x, ...) {
         mean1 <- mean(x$y_var[x$group_var == g1], na.rm = TRUE)
         mean2 <- mean(x$y_var[x$group_var == g2], na.rm = TRUE)
         
-        cat("   When ", x$group_var_name, "==", g1, ": ", 
-            format(round(mean1, digits), nsmall = digits), "\n", sep = "")
-        cat("   When ", x$group_var_name, "==", g2, ": ", 
-            format(round(mean2, digits), nsmall = digits), "\n", sep = "")
+        # Check if we should show simple group names (just "a" instead of "When by==a")
+        show_simple <- isTRUE(x$show_simple_groups)
         
-        # Show difference
-        if (!is.null(x$diff)) {
-          cat("   Diff: (", x$group_var_name, "==", g1, 
-              ") - (", x$group_var_name, "==", g2, 
-              ") = ", format(round(x$diff, digits), nsmall = digits), "\n", sep = "")
+        if (show_simple) {
+          # Show just the group values
+          cat("   ", g1, ": ", format(round(mean1, digits), nsmall = digits), "\n", sep = "")
+          cat("   ", g2, ": ", format(round(mean2, digits), nsmall = digits), "\n", sep = "")
+          
+          # Show difference
+          if (!is.null(x$diff)) {
+            cat("   Diff: ", g1, " - ", g2, " = ", 
+                format(round(x$diff, digits), nsmall = digits), "\n", sep = "")
+          }
+        } else {
+          # Show "When cond==0" format
+          cat("   When ", x$group_var_name, "==", g1, ": ", 
+              format(round(mean1, digits), nsmall = digits), "\n", sep = "")
+          cat("   When ", x$group_var_name, "==", g2, ": ", 
+              format(round(mean2, digits), nsmall = digits), "\n", sep = "")
+          
+          # Show difference
+          if (!is.null(x$diff)) {
+            cat("   Diff: (", x$group_var_name, "==", g1, 
+                ") - (", x$group_var_name, "==", g2, 
+                ") = ", format(round(x$diff, digits), nsmall = digits), "\n", sep = "")
+          }
         }
       }
     } else {

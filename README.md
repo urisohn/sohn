@@ -122,6 +122,26 @@ table2(df$group, df$status, prop = "column") # Column proportions
 </details>
 
 <details>
+<summary><code>t.test2()</code>: Enhanced t-test function that returns results as a dataframe with variable-named columns</summary>
+
+```r
+# Two-sample t-test
+men <- rnorm(100, mean = 5, sd = 1)
+women <- rnorm(100, mean = 4.8, sd = 1)
+t.test2(men, women)  # Returns dataframe with columns: men, women, men-women, SE_men-women, t, df, p.value, se1, se2, method
+
+# Formula syntax
+data <- data.frame(y = rnorm(100), group = rep(c("A", "B"), 50))
+t.test2(y ~ group, data = data)  # Columns: A, B, A-B, SE_A-B, etc.
+
+# Formula syntax without data argument
+xs <- c(x1, x2)
+by <- rep(c('a', 'b'), c(length(x1), length(x2)))
+t.test2(xs ~ by)  # Columns: a, b, a-b, SE_a-b, etc.
+```
+</details>
+
+<details>
 <summary><code>simplify()</code>: Simplify statistical test output (e.g., t-tests) for cleaner, more readable results</summary>
 
 ```r
