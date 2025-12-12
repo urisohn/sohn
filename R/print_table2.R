@@ -22,17 +22,31 @@ print.table2 <- function(x, ...) {
   col_labels <- dimn[[2]]
   
   # Calculate widths for formatting
-  col_widths <- nchar(col_labels)
-  max_col_width <- max(col_widths, na.rm = TRUE)
+  # First, calculate width of column labels
+  col_label_widths <- nchar(col_labels)
+  max_col_label_width <- max(col_label_widths, na.rm = TRUE)
+  
+  # Calculate width of actual data values - format each value and check width
+  max_data_width <- 0
+  for (i in seq_along(row_labels)) {
+    for (j in seq_along(col_labels)) {
+      val_str <- as.character(x[i, j])
+      max_data_width <- max(max_data_width, nchar(val_str), na.rm = TRUE)
+    }
+  }
+  
+  # Use the maximum of label width and data width for column formatting
+  max_col_width <- max(max_col_label_width, max_data_width)
+  
   row_label_width <- max(nchar(row_labels), na.rm = TRUE)
   row_var_width <- nchar(row_var_name)
   
-  # Estimate column spacing (R typically uses 2 spaces between columns)
+  # Column spacing (R typically uses 2 spaces between columns)
   col_spacing <- 2
   
   # Calculate total width of all columns
   n_cols <- length(col_labels)
-  total_col_width <- sum(col_widths) + (n_cols - 1) * col_spacing
+  total_col_width <- n_cols * max_col_width + (n_cols - 1) * col_spacing
   
   # Calculate spacing to center column variable name over the data columns
   col_var_width <- nchar(col_var_name)
@@ -49,9 +63,14 @@ print.table2 <- function(x, ...) {
   
   # Print column labels
   cat(strrep(" ", total_row_label_width))
+  # Build column labels as formatted values
+  col_label_values <- character(length(col_labels))
   for (i in seq_along(col_labels)) {
-    cat(sprintf(paste0("%", max_col_width + col_spacing, "s"), col_labels[i]))
+    col_label_values[i] <- sprintf(paste0("%", max_col_width, "s"), col_labels[i])
   }
+  # Join with spacing and print
+  spacing_str <- strrep(" ", col_spacing)
+  cat(paste(col_label_values, collapse = spacing_str))
   cat("\n")
   
   # Print rows with row variable name on left margin
@@ -67,9 +86,16 @@ print.table2 <- function(x, ...) {
     }
     
     # Print values (right-aligned like R does)
+    # Build the row as a vector of formatted values
+    row_values <- character(length(col_labels))
     for (j in seq_along(col_labels)) {
-      cat(sprintf(paste0("%", max_col_width + col_spacing, "s"), x[i, j]))
+      val_str <- as.character(x[i, j])
+      # Right-align the value within max_col_width
+      row_values[j] <- sprintf(paste0("%", max_col_width, "s"), val_str)
     }
+    # Join with spacing and print
+    spacing_str <- strrep(" ", col_spacing)
+    cat(paste(row_values, collapse = spacing_str))
     cat("\n")
   }
   

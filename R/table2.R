@@ -184,9 +184,22 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
     # Get original dimnames before modification
     orig_dimn <- dimnames(result)
     
+    # Get variable names from dimnames for cat messages
+    var1_name <- if (length(dim(result)) == 2 && !is.null(names(orig_dimn)) && nchar(names(orig_dimn)[1]) > 0) {
+      names(orig_dimn)[1]
+    } else {
+      ""
+    }
+    var2_name <- if (length(dim(result)) == 2 && !is.null(names(orig_dimn)) && nchar(names(orig_dimn)[2]) > 0) {
+      names(orig_dimn)[2]
+    } else {
+      ""
+    }
+    
     # TASK 8: Add marginal totals for proportion tables
     if (prop == 0) {
       # Overall proportions: divide by sum of all cells
+      cat("\nNote: Proportions for full data\n")
       total_sum <- sum(result, na.rm = TRUE)
       result <- result / total_sum
       # Round to specified number of digits
@@ -222,6 +235,7 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
       
     } else if (prop == 1) {
       # Row proportions: each row sums to 1
+      cat("\nNote: Proportions by each '", var1_name, "' row.\n", sep = "")
       row_sums <- rowSums(result, na.rm = TRUE)
       # Avoid division by zero
       row_sums[row_sums == 0] <- 1
@@ -242,6 +256,7 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
       
     } else if (prop == 2) {
       # Column proportions: each column sums to 1
+      cat("\nNote: Proportions for each '", var2_name, "' column\n", sep = "")
       col_sums <- colSums(result, na.rm = TRUE)
       # Avoid division by zero
       col_sums[col_sums == 0] <- 1
