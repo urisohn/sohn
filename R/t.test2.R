@@ -1,3 +1,98 @@
+# Internal helper function to simplify t-test output for printing
+# This function is used internally by t.test2() to format console output
+simplify_ttest <- function(object, digits = 3, calling_env = NULL, ...) {
+  if (!inherits(object, "htest")) {
+    stop("object must be of class 'htest'")
+  }
+  
+  if (!grepl("t-test", object$method, ignore.case = TRUE)) {
+    stop("simplify_ttest() only works with t.test() output")
+  }
+  
+  # Parse data.name to extract variable names
+  data_name <- object$data.name
+  
+  # Check if it's formula syntax (contains "by" or "~")
+  is_formula <- grepl(" by | ~ ", data_name)
+  
+  if (is_formula) {
+    # Formula syntax: "y by group" or "y ~ group"
+    # Split on " by " or " ~ "
+    parts <- strsplit(data_name, " by | ~ ")[[1]]
+    if (length(parts) == 2) {
+      y_var_name <- trimws(parts[1])
+      group_var_name <- trimws(parts[2])
+      
+      object$y_var_name <- y_var_name
+      object$group_var_name <- group_var_name
+      object$is_formula <- TRUE
+      
+      # Try to get original data from the environment
+      if (is.null(calling_env)) {
+        env <- tryCatch(parent.frame(), error = function(e) .GlobalEnv)
+      } else {
+        env <- calling_env
+      }
+      
+      tryCatch({
+        # Try to get variables from the environment
+        y_var <- tryCatch(get(y_var_name, envir = env), error = function(e) NULL)
+        group_var <- tryCatch(get(group_var_name, envir = env), error = function(e) NULL)
+        
+        # If we got both variables and they have the same length, store them
+        if (!is.null(y_var) && !is.null(group_var) && 
+            length(y_var) > 0 && length(group_var) > 0 && 
+            length(y_var) == length(group_var)) {
+          object$y_var <- y_var
+          object$group_var <- group_var
+        } else {
+          object$y_var <- NULL
+          object$group_var <- NULL
+        }
+      }, error = function(e) {
+        object$y_var <- NULL
+        object$group_var <- NULL
+      })
+      
+      # Calculate difference
+      if (length(object$estimate) == 2) {
+        object$diff <- object$estimate[1] - object$estimate[2]
+      }
+    }
+  } else {
+    # Standard syntax: "x and y" or just "x"
+    if (grepl(" and ", data_name)) {
+      parts <- strsplit(data_name, " and ")[[1]]
+      x_name <- trimws(parts[1])
+      y_name <- trimws(parts[2])
+      object$x.name <- x_name
+      object$y.name <- y_name
+      object$is_formula <- FALSE
+      
+      if (length(object$estimate) == 2) {
+        object$diff <- object$estimate[1] - object$estimate[2]
+      }
+    } else {
+      # One-sample test
+      object$x.name <- trimws(data_name)
+      object$y.name <- NULL
+      object$is_formula <- FALSE
+      object$diff <- NULL
+    }
+  }
+  
+  # Store digits
+  object$digits <- digits
+  
+  # Change class to use our print method
+  class(object) <- c("simplified_ttest", class(object))
+  
+  # Print the enhanced output
+  print(object)
+  
+  invisible(object)
+}
+
 #' Enhanced t-test function
 #'
 #' Runs \code{\link[stats]{t.test}} and returns results as a dataframe
@@ -42,9 +137,10 @@
 #' data <- data.frame(y = rnorm(100), group = rep(c("A", "B"), 50))
 #' t.test2(y ~ group, data = data)
 #'
-#' @seealso \code{\link[stats]{t.test}}, \code{\link{simplify}}
+#' @seealso \code{\link[stats]{t.test}}
 #'
-#' @export
+#' @name t.test2
+#' @export t.test2
 t.test2 <- function(..., digits = 3) {
   
   # FUNCTION OUTLINE:
@@ -83,6 +179,10 @@ t.test2 <- function(..., digits = 3) {
     t_stat <- as.numeric(tt_result$statistic)
     df <- as.numeric(tt_result$parameter)
     p_value <- as.numeric(tt_result$p.value)
+  
+  # Calculate SE(diff) - standard error of the difference
+  # SE(diff) = diff / t (since t = diff / SE(diff))
+    se_diff <- if (!is.na(diff) && !is.na(t_stat) && t_stat != 0) abs(diff / t_stat) else NA_real_
   
   # TASK 4: EXTRACT COLUMN NAMES - Determine column names from variable names or group values
   # Initialize column names with defaults (will be overwritten if we can extract names)
@@ -205,8 +305,8 @@ t.test2 <- function(..., digits = 3) {
     # This can happen in some edge cases
   })
   
-  # TASK 6: DISPLAY OUTPUT - Print simplified t-test results matching simplify() output
-  # Use simplify_ttest to print console output (matches simplify(t.test()) output)
+  # TASK 6: DISPLAY OUTPUT - Print simplified t-test results
+  # Use simplify_ttest helper function to print console output
   # Pass the calling environment so simplify_ttest can access original data for better formatting
   simplify_ttest(tt_result, digits = digits, calling_env = calling_env)
   
@@ -223,8 +323,12 @@ t.test2 <- function(..., digits = 3) {
   # Add difference column with dynamic name (var1-var2 format)
   if (!is.na(mean2)) {
     # For two-sample tests, use variable names in diff column name (e.g., "x1-x2")
-    diff_col_name <- paste0(col1_name, " - ", col2_name)
+    # Use "-" directly (not " - ") and check.names=FALSE will preserve it
+    diff_col_name <- paste0(col1_name, "-", col2_name)
     result_list[[diff_col_name]] <- diff
+    # Add SE(diff) column right after diff
+    se_diff_col_name <- paste0("SE_", col1_name, "-", col2_name)
+    result_list[[se_diff_col_name]] <- se_diff
   } else {
     # For one-sample test, diff is NA, so use default name
     result_list$diff <- diff
@@ -234,12 +338,16 @@ t.test2 <- function(..., digits = 3) {
   result_list$t <- t_stat
   result_list$df <- df
   result_list$p.value <- p_value
-  result_list$se1 <- se1
-  result_list$se2 <- se2
   result_list$method <- method_type
+  # Use variable names for SE columns (e.g., se_wannda, se_yolannda)
+  result_list[[paste0("se_", col1_name)]] <- se1
+  if (!is.na(mean2)) {
+    result_list[[paste0("se_", col2_name)]] <- se2
+  }
   
   # Convert list to dataframe (creates a 1-row dataframe)
-  result_df <- as.data.frame(result_list, stringsAsFactors = FALSE)
+  # Use check.names = FALSE to preserve column names with special characters like "-"
+  result_df <- as.data.frame(result_list, stringsAsFactors = FALSE, check.names = FALSE)
   
   # TASK 8: Return dataframe invisibly (only console output is visible)
   return(invisible(result_df))

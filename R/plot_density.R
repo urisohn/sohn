@@ -387,7 +387,7 @@ plot_density <- function(y, x, data = NULL, show.t = TRUE, show.ks = TRUE, ...) 
             t_test <- t.test(y_low, y_high)
             t_stat <- round(t_test$statistic, 2)
             t_df <- round(t_test$parameter, 0)
-            t_p <- format.pvalue(t_test$p.value, include_p = FALSE)
+            t_p <- format_pvalue(t_test$p.value, include_p = FALSE)
             t_label <- paste0("t-test: t(", t_df, ") = ", t_stat, ",  p ", t_p)
           
           # Low mean segment
@@ -499,14 +499,14 @@ plot_density <- function(y, x, data = NULL, show.t = TRUE, show.ks = TRUE, ...) 
         # Add KS test results in bottom right corner (only if show.ks is TRUE)
         if (show.ks) {
           ks_d <- round(ks_test$statistic, 3)
-          ks_p <- format.pvalue(ks_test$p.value, include_p = TRUE)
+          ks_p <- format_pvalue(ks_test$p.value, include_p = TRUE)
           
           usr <- par("usr")
           x_range <- usr[2] - usr[1]
           y_range <- usr[4] - usr[3]
           #  KS result 
           #p-value
-          ks_p_formatted <- format.pvalue(ks_test$p.value, include_p = TRUE)
+          ks_p_formatted <- format_pvalue(ks_test$p.value, include_p = TRUE)
           
           #Full
           ks_values <- paste0("Kolmogorov-Smirnov\nD = ", ks_d, "\n", ks_p_formatted)

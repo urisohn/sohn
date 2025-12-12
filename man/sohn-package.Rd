@@ -32,7 +32,7 @@ This package contains various utility functions organized into the following cat
 \section{Formatting}{
 
 \itemize{
-  \item \code{\link{format.pvalue}}: Format p-values for display
+  \item \code{\link{format_pvalue}}: Format p-values for display
   \item \code{\link{message.col}}: Print colored messages to console
 }
 }

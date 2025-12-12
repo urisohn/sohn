@@ -128,38 +128,39 @@ table2(df$group, df$status, prop = "column") # Column proportions
 # Two-sample t-test
 men <- rnorm(100, mean = 5, sd = 1)
 women <- rnorm(100, mean = 4.8, sd = 1)
-t.test2(men, women)  # Returns dataframe with columns: men, women, men-women, SE_men-women, t, df, p.value, se1, se2, method
+t.test2(men, women)  # Returns dataframe with columns: men, women, men-women, SE_men-women, t, df, p.value, method, se_men, se_women
 
 # Formula syntax
 data <- data.frame(y = rnorm(100), group = rep(c("A", "B"), 50))
-t.test2(y ~ group, data = data)  # Columns: A, B, A-B, SE_A-B, etc.
+t.test2(y ~ group, data = data)  # Columns: A, B, A-B, SE_A-B, t, df, p.value, method, se_A, se_B
 
 # Formula syntax without data argument
 xs <- c(x1, x2)
 by <- rep(c('a', 'b'), c(length(x1), length(x2)))
-t.test2(xs ~ by)  # Columns: a, b, a-b, SE_a-b, etc.
+t.test2(xs ~ by)  # Columns: a, b, a-b, SE_a-b, t, df, p.value, method, se_a, se_b
 ```
 </details>
 
 <details>
-<summary><code>simplify()</code>: Simplify statistical test output (e.g., t-tests) for cleaner, more readable results</summary>
+<summary><code>simplify()</code>: Simplify table output with variable names in margins</summary>
 
 ```r
-men <- rnorm(100, mean = 5, sd = 1)
-women <- rnorm(100, mean = 4.8, sd = 1)
-result <- t.test(men, women)
-simplify(result)
+df <- data.frame(
+  smg1 = c(1, 2, 2, 1, 2),
+  coupled = c(0, 1, 0, 1, 1)
+)
+simplify(table(df$smg1 == 2, df$coupled))
 ```
 </details>
 
 ### ✨ Formatting
 
 <details>
-<summary><code>format.pvalue()</code>: Format p-values for clean display in figures and tables (e.g., p<.0001)</summary>
+<summary><code>format_pvalue()</code>: Format p-values for clean display in figures and tables (e.g., p<.0001)</summary>
 
 ```r
-format.pvalue(0.05)
-format.pvalue(0.0001, include_p = TRUE)
+format_pvalue(0.05)
+format_pvalue(0.0001, include_p = TRUE)
 ```
 </details>
 

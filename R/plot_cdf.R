@@ -387,7 +387,7 @@ plot_cdf <- function(y, x, data = NULL, show.ks = TRUE, show.quantiles = TRUE, .
               }
             )
             qr_p <- qr_summary$coefficients[2, 4]  # p-value for x_group coefficient
-            quantile_pvals[i] <- format.pvalue(qr_p, include_p = TRUE)
+            quantile_pvals[i] <- format_pvalue(qr_p, include_p = TRUE)
             
             # Store model with appropriate name
             if (tau == 0.25) {
@@ -478,15 +478,15 @@ plot_cdf <- function(y, x, data = NULL, show.ks = TRUE, show.quantiles = TRUE, .
       # Add KS test results in bottom right corner (only if show.ks is TRUE)
         if (show.ks) {
           ks_d <- round(ks_test$statistic, 3)
-          ks_p <- format.pvalue(ks_test$p.value, include_p = TRUE)
+          ks_p <- format_pvalue(ks_test$p.value, include_p = TRUE)
           
           usr <- par("usr")
           x_range <- usr[2] - usr[1]
           y_range <- usr[4] - usr[3]
-          # Format KS p-value (format.pvalue with include_p=TRUE gives "p = .05")
-          ks_p_formatted <- format.pvalue(ks_test$p.value, include_p = TRUE)
+          # Format KS p-value (format_pvalue with include_p=TRUE gives "p = .05")
+          ks_p_formatted <- format_pvalue(ks_test$p.value, include_p = TRUE)
           # Format KS results: "Kolmogorov-Smirnov\nD = xx\np = p"
-          # format.pvalue already includes "p = ", so we use it directly
+          # format_pvalue already includes "p = ", so we use it directly
           ks_values <- paste0("Kolmogorov-Smirnov\nD = ", ks_d, "\n", ks_p_formatted)
           # Position in bottom right corner
           text(x = usr[2] - 0.02 * x_range, y = usr[3] + 0.02 * y_range, 

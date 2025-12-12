@@ -126,7 +126,28 @@ print.simplified_ttest <- function(x, ...) {
   cat("\n", test_type, " (", alternative_text, ")\n", sep = "")
   cat("   t=", format(x$statistic, digits = 4), "\n", sep = "")
   cat("   df=", format(x$parameter, digits = 4), "\n", sep = "")
-  cat("   p-value=", format.pval(x$p.value), "\n", sep = "")
+  # Show formatted p-value and raw p-value (only if p < 0.001)
+  if (!is.na(x$p.value) && x$p.value < 0.001) {
+    formatted_p <- format_pvalue(x$p.value, include_p = TRUE)
+    # Format raw p-value: always use scientific notation
+    raw_p_str <- format(x$p.value, scientific = TRUE, digits = 4)
+    # Remove leading zero from scientific notation (e.g., "3.400e-15" stays as is, "0.3019e-08" becomes "3.019e-09")
+    # Actually, format() with scientific=TRUE already handles this correctly
+    cat("   ", formatted_p, "\n   (precise p=", raw_p_str, ")\n", sep = "")
+  } else {
+    # For p >= 0.001, just show raw p-value
+    if (!is.na(x$p.value)) {
+      raw_p_str <- sprintf("%.6f", x$p.value)
+      # Remove trailing zeros
+      raw_p_str <- sub("0+$", "", raw_p_str)
+      raw_p_str <- sub("\\.$", "", raw_p_str)
+      # Remove leading zero
+      raw_p_str <- sub("^0\\.", ".", raw_p_str)
+      cat("   p-value=", raw_p_str, "\n", sep = "")
+    } else {
+      cat("   p-value=NA\n", sep = "")
+    }
+  }
   
   invisible(x)
 }

@@ -20,25 +20,25 @@
 #'
 #' @examples
 #' # Basic usage
-#' format.pvalue(0.05)
-#' format.pvalue(0.0001)
-#' format.pvalue(0.9999)
+#' format_pvalue(0.05)
+#' format_pvalue(0.0001)
+#' format_pvalue(0.9999)
 #'
 #' # Vector input
-#' format.pvalue(c(0.05, 0.001, 0.00001, 0.99))
+#' format_pvalue(c(0.05, 0.001, 0.00001, 0.99))
 #'
 #' # With p prefix
-#' format.pvalue(0.05, include_p = TRUE)
+#' format_pvalue(0.05, include_p = TRUE)
 #'
 #' # Different precision
-#' format.pvalue(0.05, digits = 3)
+#' format_pvalue(0.05, digits = 3)
 #'
 #' # Edge cases
-#' format.pvalue(c(0, 0.00005, 0.5, 0.99999, 1, NA))
+#' format_pvalue(c(0, 0.00005, 0.5, 0.99999, 1, NA))
 #'
-#' @name format.pvalue
-#' @export format.pvalue
-format.pvalue <- function(p, digits = 4, include_p = FALSE) {
+#' @name format_pvalue
+#' @export format_pvalue
+format_pvalue <- function(p, digits = 4, include_p = FALSE) {
   # Handle NA values
   is_na <- is.na(p)
   result <- character(length(p))

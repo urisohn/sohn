@@ -54,5 +54,5 @@ t.test2(y ~ group, data = data)
 
 }
 \seealso{
-\code{\link[stats]{t.test}}, \code{\link{simplify}}
+\code{\link[stats]{t.test}}
 }
