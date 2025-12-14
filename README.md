@@ -102,7 +102,7 @@ plot(1:10, 1:10, type = "n")
 ### 📈 Statistical Analyses
 
 <details>
-<summary><code>table2()</code>: Enhanced table function with variable name display and proportion calculations</summary>
+<summary><code>table2()</code>: Enhances base table(): (1) variable names are shown, (2) proportions are an option</summary>
 
 ```r
 df <- data.frame(
