@@ -110,14 +110,14 @@ df <- data.frame(
   status = c("X", "Y", "X", "Y", "X")
 )
 
-# Table with variable names in dimnames
+# table() does not show var names, table2() does
+table (df$group, df$status)
 table2(df$group, df$status)
 
-# Compute proportions
+# can report proportinos (building in prop.table() )
 table2(df$group, df$status, prop = "all")    # Overall proportions
 table2(df$group, df$status, prop = "row")    # Row proportions
 table2(df$group, df$status, prop = "column") # Column proportions
-# Or use numeric: prop = 0, 1, or 2
 ```
 </details>
 
