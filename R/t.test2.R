@@ -109,7 +109,7 @@ simplify_ttest <- function(object, digits = 3, calling_env = NULL, ...) {
 #' @param digits Number of decimal places to display. Default is 3.
 #'
 #' @return A dataframe (returned invisibly) with columns named after the variables
-#'   or group values, plus: diff, t, df, p.value, se1, se2, method
+#'   or group values, plus: diff, SE_diff, conf.intL, conf.intH, t, df, p.value, se1, se2, method
 #'
 #' @details
 #' This function:
@@ -126,6 +126,9 @@ simplify_ttest <- function(object, digits = 3, calling_env = NULL, ...) {
 #'     For formula syntax (\code{t.test2(y ~ group, data=df)}), columns are
 #'     named after the group values (e.g., \code{low}, \code{high}).
 #'   \item diff: Difference of means (mean1 - mean2, NA for one-sample test)
+#'   \item SE_diff: Standard error of the difference of means (NA for one-sample test)
+#'   \item conf.intL: Lower bound of confidence interval
+#'   \item conf.intH: Upper bound of confidence interval
 #'   \item t: t-statistic
 #'   \item df: Degrees of freedom
 #'   \item p.value: p-value
@@ -190,6 +193,11 @@ t.test2 <- function(..., digits = 3) {
   # Calculate SE(diff) - standard error of the difference
   # SE(diff) = diff / t (since t = diff / SE(diff))
     se_diff <- if (!is.na(diff) && !is.na(t_stat) && t_stat != 0) abs(diff / t_stat) else NA_real_
+  
+  # Extract confidence interval
+    conf_int <- tt_result$conf.int
+    conf_intL <- if (!is.null(conf_int) && length(conf_int) >= 1) as.numeric(conf_int[1]) else NA_real_
+    conf_intH <- if (!is.null(conf_int) && length(conf_int) >= 2) as.numeric(conf_int[2]) else NA_real_
   
   # TASK 4: EXTRACT COLUMN NAMES - Determine column names from variable names or group values
   # Initialize column names with defaults (will be overwritten if we can extract names)
@@ -356,9 +364,15 @@ t.test2 <- function(..., digits = 3) {
     # Add SE(diff) column right after diff
     se_diff_col_name <- paste0("SE_", col1_name, "-", col2_name)
     result_list[[se_diff_col_name]] <- se_diff
+    # Add confidence interval columns after SE(diff)
+    result_list$conf.intL <- conf_intL
+    result_list$conf.intH <- conf_intH
   } else {
     # For one-sample test, diff is NA, so use default name
     result_list$diff <- diff
+    # Add confidence interval columns for one-sample test as well
+    result_list$conf.intL <- conf_intL
+    result_list$conf.intH <- conf_intH
   }
   
   # Add other test statistics columns
