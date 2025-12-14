@@ -122,22 +122,29 @@ table2(df$group, df$status, prop = "column") # Column proportions
 </details>
 
 <details>
-<summary><code>t.test2()</code>: Enhances base t.test: (1) console results are human readable, (2) saved output is dataframe, not list</summary>
+<summary><code>t.test2()</code>: Enhances base t.test: (1) console shows all key results (e.g., diff of mean!), (2) output is dataframe, not list</summary>
 
 ```r
-# Two-sample t-test
-men <- rnorm(100, mean = 5, sd = 1)
-women <- rnorm(100, mean = 4.8, sd = 1)
-t.test2(men, women)  # Returns dataframe with columns: men, women, men-women, SE_men-women, conf.intL, conf.intH, t, df, p.value, method, se_men, se_women
+# Data for example
+	men <- rnorm(100, mean = 5, sd = 1)
+	women <- rnorm(100, mean = 4.8, sd = 1)
+
+# t.test() is harder to interpret, does not show difference of means(!) or indicate which mean is subtraced from which
+
+	t.test(men, women) 
+	t.test2(men, women)
 
 # Formula syntax
-data <- data.frame(y = rnorm(100), group = rep(c("A", "B"), 50))
-t.test2(y ~ group, data = data)  # Columns: A, B, A-B, SE_A-B, conf.intL, conf.intH, t, df, p.value, method, se_A, se_B
+	data <- data.frame(y = rnorm(100), group = rep(c("A", "B"), 50))
+	t2 = t.test2(y ~ group, data = data)  # Columns: A, B, A-B, SE_A-B, conf.intL, conf.intH, t, df, p.value, method, se_A, se_B
+	t2
 
 # Formula syntax without data argument
-xs <- c(x1, x2)
-by <- rep(c('a', 'b'), c(length(x1), length(x2)))
-t.test2(xs ~ by)  # Columns: a, b, a-b, SE_a-b, conf.intL, conf.intH, t, df, p.value, method, se_a, se_b
+	x1=rnorm(100)
+	x2=rnorm(100)
+	y <- c(x1, x2)
+	condition <- rep(c('A', 'B'), c(length(x1), length(x2)))
+	t.test2(y ~ condition)  
 ```
 </details>
 
