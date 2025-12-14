@@ -122,7 +122,7 @@ table2(df$group, df$status, prop = "column") # Column proportions
 </details>
 
 <details>
-<summary><code>t.test2()</code>: Enhances Base R t.test() organizing information for console in human-readable format, and outputting to dataframe instead of list</summary>
+<summary><code>t.test2()</code>: Enhances base t.test: (1) console results are human readable, (2) saved output is dataframe, not list</summary>
 
 ```r
 # Two-sample t-test
