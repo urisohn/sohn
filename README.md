@@ -122,7 +122,7 @@ table2(df$group, df$status, prop = "column") # Column proportions
 </details>
 
 <details>
-<summary><code>desc_var()</code>: Comprehensive descriptive statistics that returns a clean dataframe (not a list like psych::describeBy)</summary>
+<summary><code>desc_var()</code>: Comprehensive variable summary stats, optionally by a grouping variable</summary>
 
 ```r
 # Why use desc_var() instead of psych::describeBy()?
