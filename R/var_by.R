@@ -57,151 +57,157 @@
 #' @export
 var_by <- function(y, group = NULL, data = NULL, decimals = 3) {
   
-  # Capture variable names before evaluation
-  y_expr <- substitute(y)
-  y_name_raw <- deparse(y_expr)
-  y_name_raw <- gsub('^"|"$', '', y_name_raw)
+  # Function outline:
+  # 1. Capture variable names using non-standard evaluation
+  # 2. Extract variables from data frame if provided
+  # 3. Validate that y is numeric
+  # 4. Define helper function to compute statistics for a vector
+  # 5. Compute statistics (either for full dataset or by group)
+  # 6. Round numeric columns to specified decimal places
+  # 7. Add descriptive labels to columns using labelled package
+  # 8. Return result dataframe
   
+  # 1. Capture variable names before evaluation
+    y_expr <- substitute(y)
+    y_name_raw <- deparse(y_expr)
+    y_name_raw <- gsub('^"|"$', '', y_name_raw)
+    
   # Handle group: capture name BEFORE evaluating
-  group_expr <- substitute(group)
-  group_name_raw <- NULL
+    group_expr <- substitute(group)
+    group_name_raw <- NULL
   # Check if group was actually provided (not just using default NULL)
-  group_was_provided <- !is.null(group_expr) && !missing(group)
-  
-  if (group_was_provided) {
-    if (is.character(group_expr) && length(group_expr) == 1) {
-      group_name_raw <- group_expr
-    } else {
-      group_name_raw <- deparse(group_expr)
-      group_name_raw <- gsub('^"|"$', '', group_name_raw)
-    }
-  }
-  
-  # Extract variables from data frame if provided
-  if (!is.null(data)) {
-    if (!is.data.frame(data)) {
-      stop("'data' must be a data frame")
-    }
+    group_was_provided <- !is.null(group_expr) && !missing(group)
     
-    # Extract y column from data frame
-    if (!y_name_raw %in% names(data)) {
-      stop(sprintf("Column '%s' not found in data", y_name_raw))
-    }
-    y <- data[[y_name_raw]]
-    
-    # Extract group column from data frame if provided
     if (group_was_provided) {
-      # Check if group_name_raw looks like a column name
-      if (grepl("[()\\[\\]\\+\\-\\*/]", group_name_raw)) {
-        # group appears to be a vector expression, try to evaluate it
-        tryCatch({
-          group <- eval(group_expr, envir = parent.frame())
+      if (is.character(group_expr) && length(group_expr) == 1) {
+        group_name_raw <- group_expr
+      } else {
+        group_name_raw <- deparse(group_expr)
+        group_name_raw <- gsub('^"|"$', '', group_name_raw)
+      }
+    }
+  
+    
+    
+  # 2. Extract variables from data frame if provided
+    if (!is.null(data)) {
+      if (!is.data.frame(data)) {
+        stop("'data' must be a data frame")
+      }
+      
+      # Extract y column from data frame
+      if (!y_name_raw %in% names(data)) {
+        stop(sprintf("Column '%s' not found in data", y_name_raw))
+      }
+      y <- data[[y_name_raw]]
+      
+      # Extract group column from data frame if provided
+      if (group_was_provided) {
+        if (!group_name_raw %in% names(data)) {
+          stop(sprintf("Column '%s' not found in data", group_name_raw))
+        }
+        group <- data[[group_name_raw]]
+      } else {
+        group <- NULL
+      }
+    } else {
+      # No data frame provided - evaluate group if provided
+      if (group_was_provided) {
+        group <- tryCatch({
+          eval(group_expr, envir = parent.frame())
         }, error = function(e) {
-          stop(sprintf("Could not evaluate 'group' expression '%s'", group_name_raw))
+          stop(sprintf("Could not evaluate 'group': %s", e$message))
         })
-        # If evaluated to NULL, treat as no grouping
+        
+        # Validate group exists and has correct length
         if (is.null(group)) {
           group <- NULL
+        } else if (length(group) != length(y)) {
+          stop(sprintf("'group' must have the same length as 'y' (got %d, expected %d)", 
+                       length(group), length(y)))
         }
       } else {
-        # Check if it's explicitly NULL
-        if (group_name_raw == "NULL") {
-          group <- NULL
-        } else {
-          # group appears to be a column name, extract from data
-          if (!group_name_raw %in% names(data)) {
-            stop(sprintf("Column '%s' not found in data", group_name_raw))
-          }
-          group <- data[[group_name_raw]]
-        }
+        group <- NULL
       }
-    } else {
-      group <- NULL
     }
-  } else {
-    # No data frame provided
-    if (!group_was_provided) {
-      group <- NULL
-    }
-  }
   
-  # Validate that y is numeric
-  if (!is.numeric(y)) {
-    stop(sprintf("'y' must be numeric, but '%s' is not", y_name_raw))
-  }
+  # 3. Validate that y is numeric
+      if (!is.numeric(y)) {
+        stop(sprintf("'y' must be numeric, but '%s' is not", y_name_raw))
+      }
+    
+    
   
-  # Helper function to compute statistics for a vector
-  compute_stats <- function(x) {
-    na_count <- sum(is.na(x))
-    x <- x[!is.na(x)]  # Remove NAs
-    n <- length(x)
-    
-    # Calculate mode statistics
-    mode_val <- NA_real_
-    freq_mode <- NA_integer_
-    mode2nd_val <- NA_real_
-    freq_mode2nd <- NA_integer_
-    
-    if (n > 0) {
-      # Count frequencies
-      freq_table <- table(x)
-      freq_sorted <- sort(freq_table, decreasing = TRUE)
-      
-      if (length(freq_sorted) > 0) {
-        # Mode (most frequent value)
-        mode_val <- as.numeric(names(freq_sorted)[1])
-        freq_mode <- as.integer(freq_sorted[1])
+  # 4. Helper function to compute statistics for a vector
+      compute_stats <- function(x) {
+        na_count <- sum(is.na(x))
+        x <- x[!is.na(x)]  # Remove NAs
+        n <- length(x)
         
-        # 2nd mode (2nd most frequent value)
-        if (length(freq_sorted) > 1) {
-          mode2nd_val <- as.numeric(names(freq_sorted)[2])
-          freq_mode2nd <- as.integer(freq_sorted[2])
+        # Calculate mode statistics
+        mode_val <- NA_real_
+        freq_mode <- NA_integer_
+        mode2nd_val <- NA_real_
+        freq_mode2nd <- NA_integer_
+        
+        if (n > 0) {
+          # Count frequencies
+          tab <- table(x)
+          ord <- order(tab, decreasing = TRUE)
+          first_two <- names(tab)[ord[1:min(2, length(ord))]]
+          
+          if (length(first_two) > 0) {
+            # Mode (most frequent value)
+            mode_val <- as.numeric(first_two[1])
+            freq_mode <- as.integer(tab[ord[1]])
+            
+            # 2nd mode (2nd most frequent value)
+            if (length(first_two) > 1) {
+              mode2nd_val <- as.numeric(first_two[2])
+              freq_mode2nd <- as.integer(tab[ord[2]])
+            }
+          }
         }
+        
+        # Compute statistics (use NA values when n == 0)
+        mean_val <- if (n > 0) mean(x) else NA_real_
+        sd_val <- if (n > 0) sd(x) else NA_real_
+        se_val <- if (n > 0) sd_val / sqrt(n) else NA_real_
+        median_val <- if (n > 0) median(x) else NA_real_
+        if (n > 0) {
+          qs <- quantile(x, c(0.05, 0.10, 0.90, 0.95), names = FALSE)
+          q5_val <- qs[1]
+          q10_val <- qs[2]
+          q90_val <- qs[3]
+          q95_val <- qs[4]
+        } else {
+          q5_val <- q10_val <- q90_val <- q95_val <- NA_real_
+        }
+        min_val <- if (n > 0) min(x) else NA_real_
+        max_val <- if (n > 0) max(x) else NA_real_
+        
+        # Return single list structure
+        list(
+          n = as.integer(n),
+          mean = as.numeric(mean_val),
+          sd = as.numeric(sd_val),
+          se = as.numeric(se_val),
+          median = as.numeric(median_val),
+          na = as.integer(na_count),
+          mode = as.numeric(mode_val),
+          freq_mode = as.integer(freq_mode),
+          mode2 = as.numeric(mode2nd_val),
+          freq_mode2 = as.integer(freq_mode2nd),
+          q5 = as.numeric(q5_val),
+          q10 = as.numeric(q10_val),
+          q90 = as.numeric(q90_val),
+          q95 = as.numeric(q95_val),
+          min = as.numeric(min_val),
+          max = as.numeric(max_val)
+        )
       }
-    }
-    
-    if (n == 0) {
-      return(list(
-        n = as.integer(0),
-        mean = NA_real_,
-        sd = NA_real_,
-        se = NA_real_,
-        median = NA_real_,
-        na = as.integer(na_count),
-        mode = as.numeric(mode_val),
-        freq_mode = as.integer(freq_mode),
-        mode2 = as.numeric(mode2nd_val),
-        freq_mode2 = as.integer(freq_mode2nd),
-        q5 = NA_real_,
-        q10 = NA_real_,
-        q90 = NA_real_,
-        q95 = NA_real_,
-        min = NA_real_,
-        max = NA_real_
-      ))
-    }
-    
-    list(
-      n = as.integer(n),
-      mean = as.numeric(mean(x)),
-      sd = as.numeric(sd(x)),
-      se = as.numeric(sd(x) / sqrt(n)),
-      median = as.numeric(median(x)),
-      na = as.integer(na_count),
-      mode = as.numeric(mode_val),
-      freq_mode = as.integer(freq_mode),
-      mode2 = as.numeric(mode2nd_val),
-      freq_mode2 = as.integer(freq_mode2nd),
-      q5 = as.numeric(quantile(x, 0.05, names = FALSE)),
-      q10 = as.numeric(quantile(x, 0.10, names = FALSE)),
-      q90 = as.numeric(quantile(x, 0.90, names = FALSE)),
-      q95 = as.numeric(quantile(x, 0.95, names = FALSE)),
-      min = as.numeric(min(x)),
-      max = as.numeric(max(x))
-    )
-  }
   
-  # Compute statistics
+  # 5. Compute statistics
   if (is.null(group)) {
     # No grouping: compute for full dataset
     stats <- compute_stats(y)
@@ -263,15 +269,12 @@ var_by <- function(y, group = NULL, data = NULL, decimals = 3) {
     result_df <- do.call(rbind, result_list)
   }
   
-  # Round numeric columns (except n, NA_total, freq_mode, and freq_mode2, which are integers) to specified decimals
+  # 6. Round numeric columns (except n, NA_total, freq_mode, and freq_mode2, which are integers) to specified decimals
   numeric_cols <- c("mean", "sd", "se", "median", "mode", "mode2", "q5", "q10", "q90", "q95", "min", "max")
-  for (col in numeric_cols) {
-    if (col %in% names(result_df)) {
-      result_df[[col]] <- round(result_df[[col]], digits = decimals)
-    }
-  }
+  numeric_cols <- numeric_cols[numeric_cols %in% names(result_df)]
+  result_df[numeric_cols] <- lapply(result_df[numeric_cols], round, digits = decimals)
   
-  # Add descriptive labels to columns using labelled package
+  # 7. Add descriptive labels to columns using labelled package
   label_list <- list(
     group = "Group identifier",
     n = "Number of observations",
@@ -292,14 +295,11 @@ var_by <- function(y, group = NULL, data = NULL, decimals = 3) {
     max = "Maximum value"
   )
   
-  # Only assign labels for columns that exist in result_df
-  label_list <- label_list[names(label_list) %in% names(result_df)]
-  
-  labelled::var_label(result_df) <- label_list
+  labelled::var_label(result_df) <- label_list[names(result_df)]
   
   rownames(result_df) <- NULL
   
-  # Return result_df (will print if called directly, won't print if assigned)
+  # 8. Return result dataframe (will print if called directly, won't print if assigned)
   return(result_df)
 }
 
