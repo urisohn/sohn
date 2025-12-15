@@ -40,21 +40,21 @@
 #' @examples
 #' # With grouping
 #' df <- data.frame(y = rnorm(100), group = rep(c("A", "B"), 50))
-#' var_by(y, group, data = df)
+#' desc_var(y, group, data = df)
 #'
 #' # Without grouping (full dataset)
-#' var_by(y, data = df)
+#' desc_var(y, data = df)
 #'
 #' # Direct vectors
 #' y <- rnorm(100)
 #' group <- rep(c("A", "B"), 50)
-#' var_by(y, group)
+#' desc_var(y, group)
 #'
 #' # With custom decimal places
-#' var_by(y, group, data = df, decimals = 2)
+#' desc_var(y, group, data = df, decimals = 2)
 #'
 #' @export
-var_by <- function(y, group = NULL, data = NULL, decimals = 3) {
+desc_var <- function(y, group = NULL, data = NULL, decimals = 3) {
   
   # Function outline:
   # 1. Capture variable expressions using rlang
