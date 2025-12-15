@@ -28,11 +28,6 @@
 #'   \item \code{\link{message.col}}: Print colored messages to console
 #' }
 #'
-#' @section Simulations:
-#' \itemize{
-#'   \item \code{\link{counter}}: Adaptive progress reporter for simulations
-#' }
-#'
 #' @section Data Management:
 #' \itemize{
 #'   \item \code{\link{namedList}}: Create lists with automatic naming

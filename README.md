@@ -196,20 +196,6 @@ message.col("This is a cyan message", col = "cyan")
 ```
 </details>
 
-### 🔄 Simulations
-
-<details>
-<summary><code>counter()</code>: Show # of simulations run so far inside a monte carlo loop</summary>
-
-```r
-for (i in 1:100) {
-  # Your simulation code here
-  Sys.sleep(0.1)  # Simulate work
-  counter(i)  # Report progress
-}
-```
-</details>
-
 ### 🗂️ Data Management
 
 <details>
