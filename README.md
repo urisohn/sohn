@@ -122,7 +122,7 @@ table2(df$group, df$status, prop = "column") # Column proportions
 </details>
 
 <details>
-<summary><code>desc_var()</code>: Describe a variable (mean, mode, etc.), optionally by grouping variable</summary>
+<summary><code>desc_var()</code>: Descriptive statistics by group (or full dataset)</summary>
 
 ```r
 # With grouping
@@ -142,6 +142,26 @@ desc_var(y, group, data = df, decimals = 2)
 ```
 </details>
 
+<details>
+<summary><code>desc_var()</code>: Descriptive statistics by group (or full dataset)</summary>
+
+```r
+# With grouping
+df <- data.frame(y = rnorm(100), group = rep(c("A", "B"), 50))
+desc_var(y, group, data = df)
+
+# Without grouping (full dataset)
+desc_var(y, data = df)
+
+# Direct vectors
+y <- rnorm(100)
+group <- rep(c("A", "B"), 50)
+desc_var(y, group)
+
+# With custom decimal places
+desc_var(y, group, data = df, decimals = 2)
+```
+</details>
 
 <details>
 <summary><code>t.test2()</code>: Enhances base t.test: (1) console shows mean diff & var names, (2) output is dataframe, not list</summary>
