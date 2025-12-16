@@ -8,6 +8,9 @@
 #'   to plot on the x-axis.
 #' @param quantile.others Numeric value between 1 and 99 specifying the quantile
 #'   at which to hold all other variables constant. Default is 50 (median).
+#' @param col Color for the prediction line. Default is "blue4".
+#' @param bg Background color for the confidence band. Default is
+#'   \code{adjustcolor('dodgerblue', .2)}.
 #' @param ... Additional arguments passed to \code{plot()} and \code{lines()}.
 #'
 #' @return Invisibly returns a list containing:
@@ -51,7 +54,8 @@
 #'
 #' @importFrom mgcv gam
 #' @export
-plot_gam <- function(model, predictor, quantile.others = 50, ...) {
+plot_gam <- function(model, predictor, quantile.others = 50, 
+                     col = "blue4", bg = adjustcolor('dodgerblue', .2), ...) {
   # Check if model is from mgcv::gam()
   if (!inherits(model, "gam")) {
     stop("'model' must be a GAM model object fitted using mgcv::gam()")
@@ -191,6 +195,16 @@ plot_gam <- function(model, predictor, quantile.others = 50, ...) {
   # Extract additional arguments for plotting
   dots <- list(...)
   
+  # Remove col and bg from dots if present (use formal arguments instead)
+  if ("col" %in% names(dots)) {
+    col <- dots$col
+    dots$col <- NULL
+  }
+  if ("bg" %in% names(dots)) {
+    bg <- dots$bg
+    dots$bg <- NULL
+  }
+  
   # Set default labels if not provided
   if (!"xlab" %in% names(dots)) dots$xlab <- predictor
   if (!"ylab" %in% names(dots)) dots$ylab <- response_var
@@ -217,11 +231,11 @@ plot_gam <- function(model, predictor, quantile.others = 50, ...) {
   # Add confidence bands
   polygon(c(predictor_seq, rev(predictor_seq)), 
           c(lower, rev(upper)),
-          col = adjustcolor("gray", alpha.f = 0.3),
+          col = bg,
           border = NA)
   
   # Redraw the prediction line on top
-  lines(predictor_seq, predicted, ...)
+  lines(predictor_seq, predicted, col = col, ...)
   
   # Return results invisibly
   result <- list(
@@ -234,4 +248,10 @@ plot_gam <- function(model, predictor, quantile.others = 50, ...) {
   
   invisible(result)
 }
+
+
+
+
+
+
 
