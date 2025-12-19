@@ -79,11 +79,12 @@ plot_gam <- function(model, predictor, quantile.others = 50,
   formula_char <- paste(deparse(model_formula), collapse = " ")
   # Check for factor( in the formula (factor is lowercase in R)
   if (grepl("\\bfactor\\s*\\(", formula_char, ignore.case = FALSE)) {
-    stop("A variable in the GAM formula was included with 'factor()'.\n ",
-         " Please, instead, convert that variable to factor  before running the GAM model\n",
-         "\n  Example: Instead of gam(y ~ factor(x), data = df), do:\n",
+    message.col("A variable in the GAM formula was included with 'factor()'.\n",
+         "Please, instead, convert that variable to factor  before running the GAM model\n",
+         "\nExample: Instead of gam(y ~ factor(x), data = df), do:\n",
          "    df$x <- factor(df$x)\n",
-         "    gam(y ~ x, data = df)")
+         "    gam(y ~ x, data = df)",col='red')
+    stop()
   }
   
   # Validate quantile.others
@@ -173,11 +174,8 @@ plot_gam <- function(model, predictor, quantile.others = 50,
     if (is.factor(var_values)) {
       # For factors, use the first/lowest factor level
       first_level <- levels(var_values)[1]
-      # Find a row with this level to preserve exact factor structure
-      idx <- which(var_values == first_level)[1]
-      if (length(idx) == 0) idx <- 1
-      # Replicate the exact factor value from model_data
-      new_data[[var]] <- var_values[rep(idx, n_rows)]
+      # Create factor with first level, preserving all levels
+      new_data[[var]] <- factor(rep(first_level, n_rows), levels = levels(var_values))
     } else if (is.character(var_values)) {
       # For character vectors, use the most common value
       var_levels <- table(var_values)
@@ -222,8 +220,8 @@ plot_gam <- function(model, predictor, quantile.others = 50,
   }
   
   # Set default labels if not provided
-  if (!"xlab" %in% names(dots)) dots$xlab <- predictor
-  if (!"ylab" %in% names(dots)) dots$ylab <- response_var
+  dots <- set_default(dots, "xlab", predictor)
+  dots <- set_default(dots, "ylab", response_var)
   
   # Set default main title if not provided
   main_title_text <- if ("main" %in% names(dots)) dots$main else paste0("GAM Predicting '", response_var, "' with '", predictor,"'")
@@ -235,13 +233,13 @@ plot_gam <- function(model, predictor, quantile.others = 50,
   dots$main <- ""
   
   # Set default formatting
-  if (!"font.lab" %in% names(dots)) dots$font.lab <- 2
-  if (!"cex.lab" %in% names(dots)) dots$cex.lab <- 1.2
-  if (!"las" %in% names(dots)) dots$las <- 1
+  dots <- set_default(dots, "font.lab", 2)
+  dots <- set_default(dots, "cex.lab", 1.2)
+  dots <- set_default(dots, "las", 1)
   
   # Set default main title formatting if not provided
-  if (!"font.main" %in% names(dots)) dots$font.main <- 2  # bold
-  if (!"cex.main" %in% names(dots)) dots$cex.main <- 1.2
+  dots <- set_default(dots, "font.main", 2)  # bold
+  dots <- set_default(dots, "cex.main", 1.2)
   
   # Determine ylim if not provided
   if (!"ylim" %in% names(dots)) {
@@ -258,8 +256,9 @@ plot_gam <- function(model, predictor, quantile.others = 50,
   use_plot_freq <- FALSE
   use_plot_density <- FALSE
   
+  # Extract predictor data once if needed for distribution plot
+  predictor_data <- NULL
   if (plot_distribution) {
-    # Get predictor values from model data to count unique values
     predictor_data <- model_data[[predictor]]
     n_unique <- length(unique(predictor_data))
     
@@ -342,9 +341,6 @@ plot_gam <- function(model, predictor, quantile.others = 50,
     # Switch to bottom panel
     par(mar = c(5.1, 4.1, 0, 2.1))  # Bottom plot: no top margin
     
-    # Get predictor values from model data
-    predictor_data <- model_data[[predictor]]
-    
     # Determine xlim for distribution plot (use same as main plot)
     if ("xlim" %in% names(dots)) {
       xlim_dist <- dots$xlim
@@ -361,25 +357,13 @@ plot_gam <- function(model, predictor, quantile.others = 50,
       # Get ylab cex from GAM plot to match size
       ylab_cex <- if ("cex.lab" %in% names(dots)) dots$cex.lab else 1.2
       
-      # Create empty plot frame (suppress axes initially, we'll draw them after)
-      plot(NA, NA, 
-           xlim = xlim_dist, 
-           ylim = ylim_dist,
-           xlab = predictor,  # Predictor variable name
-           ylab = "Freq.",
-           main = "",
-           xaxt = "n",
-           yaxt = "n",
-           bty = "o",  # Show border
-           font.lab = 2,  # Bold font to match GAM plot ylab
-           cex.lab = ylab_cex)  # Match size of GAM plot ylab
-      
-      # Draw background covering the entire plot area
-      usr <- par("usr")
-      rect(usr[1], usr[3], usr[2], usr[4], col = bg2, border = NA)
-      
-      # Redraw border box on top of background
-      box()
+      # Initialize bottom plot with background
+      init_bottom_plot(xlim = xlim_dist, 
+                       ylim = ylim_dist,
+                       xlab = predictor, 
+                       ylab = "Freq.",
+                       bg = bg2, 
+                       cex.lab = ylab_cex)
       
       # Use plot_freq() with add=TRUE to overlay on the background
       # Set col2 if provided, otherwise use plot_freq default
@@ -409,25 +393,13 @@ plot_gam <- function(model, predictor, quantile.others = 50,
       # Get ylab cex from GAM plot to match size
       ylab_cex <- if ("cex.lab" %in% names(dots)) dots$cex.lab else 1.2
       
-      # Create empty plot frame (suppress axes initially, we'll draw them after)
-      plot(NA, NA, 
-           xlim = xlim_dist, 
-           ylim = ylim_density,
-           xlab = predictor,  # Predictor variable name
-           ylab = "Density",
-           main = "",
-           xaxt = "n",
-           yaxt = "n",
-           bty = "o",  # Show border
-           font.lab = 2,  # Bold font to match GAM plot ylab
-           cex.lab = ylab_cex)  # Match size of GAM plot ylab
-      
-      # Draw background covering the entire plot area
-      usr <- par("usr")
-      rect(usr[1], usr[3], usr[2], usr[4], col = bg2, border = NA)
-      
-      # Redraw border box on top of background
-      box()
+      # Initialize bottom plot with background
+      init_bottom_plot(xlim = xlim_dist, 
+                       ylim = ylim_density,
+                       xlab = predictor, 
+                       ylab = "Density",
+                       bg = bg2, 
+                       cex.lab = ylab_cex)
       
       # Manually plot the density curve
       # Use col2 if provided, otherwise default to "dodgerblue"

@@ -1,6 +1,30 @@
 # Utility functions (not exported)
 
 
+#0 Set default values in a list
+set_default <- function(x, name, value) {
+  if (!name %in% names(x)) x[[name]] <- value
+  x
+}
+
+# Helper function to initialize bottom plot with background
+init_bottom_plot <- function(xlim, ylim, xlab, ylab, bg, cex.lab) {
+  plot(NA, NA, 
+       xlim = xlim, 
+       ylim = ylim,
+       xlab = xlab, 
+       ylab = ylab,
+       main = "", 
+       xaxt = "n", 
+       yaxt = "n",
+       bty = "o",  # Show border
+       font.lab = 2, 
+       cex.lab = cex.lab)
+  usr <- par("usr")
+  rect(usr[1], usr[3], usr[2], usr[4], col = bg, border = NA)
+  box()
+}
+
 
 #1 Get colors
 
