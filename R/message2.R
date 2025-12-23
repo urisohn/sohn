@@ -11,19 +11,22 @@
 #' @param domain See \code{\link[base]{gettext}}. If \code{NA}, messages will not be translated.
 #' @param appendLF Logical. Should a newline be appended to the message?
 #' @param quiet Logical. If TRUE, the function returns invisibly without printing.
+#' @param stop Logical. If TRUE, stops execution (like \code{stop()}) but without printing "Error:".
 #'
 #' @details
 #' This function prints colored messages to the console. If ANSI color codes are supported
 #' by the terminal, the message will be colored. Otherwise, it will be printed as plain text.
+#' If \code{stop = TRUE}, execution will be halted after printing the message.
 #'
 #' @examples
-#' message.col("This is a plain cyan message", col = "cyan", font = 1)
-#' message.col("This is a bold cyan message", col = "cyan", font = 2)
-#' message.col("This is a bold red message", col = "red", font = 2)
+#' message2("This is a plain cyan message", col = "cyan", font = 1)
+#' message2("This is a bold cyan message", col = "cyan", font = 2)
+#' message2("This is a bold red message", col = "red", font = 2)
+#' message2("This stops execution", stop = TRUE)
 #'
 #' @export
-message.col <- function(..., col = "cyan", font = 1, domain = NULL, appendLF = TRUE, 
-                        quiet = FALSE) {
+message2 <- function(..., col = "cyan", font = 1, domain = NULL, appendLF = TRUE, 
+                     quiet = FALSE, stop = FALSE) {
   
   if (quiet) {
     return(invisible())
@@ -117,6 +120,13 @@ message.col <- function(..., col = "cyan", font = 1, domain = NULL, appendLF = T
     message(msg_obj)
   } else {
     message(msg_obj, appendLF = FALSE)
+  }
+  
+  # Stop execution if requested (without printing "Error:")
+  if (stop) {
+    opt <- options(show.error.messages = FALSE)
+    on.exit(options(opt))
+    stop("")
   }
   
   invisible()

@@ -112,12 +112,12 @@ resize_images <- function(folder, width) {
   } else if (length(width) != length(files)) {
 
     # Print error message in red
-    message.col("Error", col = "red", font = 2)
-    message.col("Found ", length(files), " image(s), but ", length(width), " width(s) were provided.", col = "red")
+    message2("Error", col = "red", font = 2)
+    message2("Found ", length(files), " image(s), but ", length(width), " width(s) were provided.", col = "red")
     
     # List files with counter
     for (j in seq_along(files)) {
-      message.col("  ", j, ". ", basename(files[j]), col = "red")
+      message2("  ", j, ". ", basename(files[j]), col = "red")
     }
     
     stop("Width vector length must match number of files or be scalar.")
@@ -174,7 +174,7 @@ resize_images <- function(folder, width) {
     
     # Print progress message in blue
       new_name <- basename(out)
-      message.col("Resized '", new_name, "'", col = "blue")
+      message2("Resized '", new_name, "'", col = "blue")
 
   }
 

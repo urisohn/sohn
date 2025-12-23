@@ -175,8 +175,8 @@ plot_density <- function(y, group, data = NULL, show.t = TRUE, show.ks = TRUE, .
     n.nagroup = sum(isnagroup)
     n.nay = sum(isnay)
     
-    if (n.nagroup>0) message.col("sohn::plot_density() says: dropped ",n.nagroup," observations with missing '",group_name_raw,"' values",col='red4')
-    if (n.nay>0) message.col("sohn::plot_density() says: dropped ",n.nay," observations with missing '",y_name_raw,"' values",col='red4')
+    if (n.nagroup>0) message2("sohn::plot_density() says: dropped ",n.nagroup," observations with missing '",group_name_raw,"' values",col='red4')
+    if (n.nay>0) message2("sohn::plot_density() says: dropped ",n.nay," observations with missing '",y_name_raw,"' values",col='red4')
   
   #5. Get unique groups
     unique_x <- unique(group)

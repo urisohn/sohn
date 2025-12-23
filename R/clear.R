@@ -50,8 +50,8 @@ clear <- function() {
   
   # Print confirmation message
   
-  message.col("sohn::clear()", font=2,col = "red4")
-  message.col("Cleared console, plot, and environment",col = "red4")
+  message2("sohn::clear()", font=2,col = "red4")
+  message2("Cleared console, plot, and environment",col = "red4")
   
   invisible(NULL)
 }

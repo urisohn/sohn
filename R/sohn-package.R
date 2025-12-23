@@ -25,7 +25,7 @@
 #' @section Formatting:
 #' \itemize{
 #'   \item \code{\link{format_pvalue}}: Format p-values for display
-#'   \item \code{\link{message.col}}: Print colored messages to console
+#'   \item \code{\link{message2}}: Print colored messages to console
 #' }
 #'
 #' @section Data Management:

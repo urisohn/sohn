@@ -570,7 +570,7 @@ plot_freq <- function(x, group=NULL, freq=TRUE, col='dodgerblue', lwd=9, width=N
 # Alias for backward compatibility
 #' @export
 fhist <- function(...) {
-  message.col("The function fhist() is deprecated, please use plot_freq() instead going forward", col = "red", font = 2)
+  message2("The function fhist() is deprecated, please use plot_freq() instead going forward", col = "red", font = 2)
   plot_freq(...)
 }
 

@@ -16,16 +16,18 @@
 #' @param prop Numeric or character. If specified, converts table to proportions:
 #'   \itemize{
 #'     \item \code{prop=0} or \code{prop="all"}: Proportions of the whole table (each cell / total)
-#'     \item \code{prop=1} or \code{prop="row"}: Proportions by rows (each row sums to 1)
-#'     \item \code{prop=2} or \code{prop="column"}: Proportions by columns (each column sums to 1)
+#'     \item \code{prop=1}, \code{prop="row"}, or \code{prop="rows"}: Proportions by rows (each row sums to 1)
+#'     \item \code{prop=2}, \code{prop="col"}, \code{prop="column"}, or \code{prop="columns"}: Proportions by columns (each column sums to 1)
 #'   }
 #'   If \code{NULL} (default), returns frequency counts.
 #' @param digits Number of decimal places to display when \code{prop} is specified.
-#'   Default is 3. Only applies when \code{prop} is not \code{NULL}.
+#'   Default is 3. Values are displayed as proportions without leading zero (e.g., .100, .110, .111).
+#'   Only applies when \code{prop} is not \code{NULL}.
 #'
 #' @return A contingency table (an object of class "table") with enhanced
 #'   dimnames when variables come from a dataframe. If \code{prop} is specified,
-#'   the table contains proportions instead of counts.
+#'   the table contains proportions (between 0 and 1) instead of counts, and
+#'   values are displayed without leading zero (e.g., .100 instead of 0.100).
 #'
 #' @details
 #' When tabulating two variables from a dataframe (e.g., \code{table2(df$x, df$y)}),
@@ -53,7 +55,7 @@
 #' table2(df$group, df$status, prop = 1)  # Row proportions
 #' table2(df$group, df$status, prop = 2)  # Column proportions
 #' table2(df$group, df$status, prop = "row")  # Row proportions (character)
-#' table2(df$group, df$status, prop = 1, digits = 2)  # Row proportions with 2 decimals
+#' table2(df$group, df$status, prop = 1, digits = 3)  # Row proportions with 3 decimals
 #'
 #' @export
 table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN), 
@@ -163,17 +165,20 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
   
   # TASK 7: Convert to proportions if requested
   if (!is.null(prop)) {
+    # Mark this as a proportion table
+    attr(result, "is_proportion") <- TRUE
+    attr(result, "proportion_digits") <- digits
     # Convert character values to numeric
     if (is.character(prop)) {
       prop_lower <- tolower(prop)
       if (prop_lower == "all") {
         prop <- 0
-      } else if (prop_lower == "row") {
+      } else if (prop_lower %in% c("row", "rows")) {
         prop <- 1
-      } else if (prop_lower == "column") {
+      } else if (prop_lower %in% c("col", "column", "columns")) {
         prop <- 2
       } else {
-        stop("prop must be 0, 1, 2, 'all', 'row', or 'column'")
+        stop("prop must be 0, 1, 2, 'all', 'row'/'rows', or 'col'/'column'/'columns'")
       }
     }
     
@@ -227,7 +232,7 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
         
         # TASK 8: Add summary column with row marginal proportions
         summary_col <- matrix(c(row_totals, round(1.0, digits = digits)), nrow = n_rows + 1, ncol = 1)
-        # Bottom right corner is 1.0 (100%) - sum of all proportions
+        # Bottom right corner is 1.0 - sum of all proportions
         result <- cbind(result, summary_col)
         dimn[[2]] <- c(dimn[[2]], "Total")  # Add "Total" to column labels
         dimnames(result) <- dimn
@@ -244,11 +249,11 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
       result <- round(result, digits = digits)
       prop_type <- "row proportions"
       
-      # TASK 8: Add column with 100% for each row
+      # TASK 8: Add column with 1.0 for each row
       if (length(dim(result)) == 2) {
         n_rows <- nrow(result)
         dimn <- dimnames(result)
-        summary_col <- matrix(1, nrow = n_rows, ncol = 1)  # 100% for each row
+        summary_col <- matrix(round(1.0, digits = digits), nrow = n_rows, ncol = 1)  # 1.0 for each row
         result <- cbind(result, summary_col)
         dimn[[2]] <- c(dimn[[2]], "Total")  # Add "Total" to column labels
         dimnames(result) <- dimn
@@ -265,11 +270,11 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
       result <- round(result, digits = digits)
       prop_type <- "column proportions"
       
-      # TASK 8: Add row with 100% for each column
+      # TASK 8: Add row with 1.0 for each column
       if (length(dim(result)) == 2) {
         n_cols <- ncol(result)
         dimn <- dimnames(result)
-        summary_row <- matrix(1, nrow = 1, ncol = n_cols)  # 100% for each column
+        summary_row <- matrix(round(1.0, digits = digits), nrow = 1, ncol = n_cols)  # 1.0 for each column
         result <- rbind(result, summary_row)
         dimn[[1]] <- c(dimn[[1]], "Total")  # Add "Total" to row labels
         dimnames(result) <- dimn
@@ -280,10 +285,12 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
   }
   
   # TASK 9: Return the enhanced table object
-  # Add class for custom printing if we have 2D table with variable names
-  if (length(dim(result)) == 2 && length(dots) == 2) {
+  # Add class for custom printing if we have 2D table with variable names or if it's a proportion table
+  if (length(dim(result)) == 2) {
     dimn <- dimnames(result)
-    if (!is.null(names(dimn)) && any(nchar(names(dimn)) > 0)) {
+    # Add class if we have variable names OR if it's a proportion table
+    if ((length(dots) == 2 && !is.null(names(dimn)) && any(nchar(names(dimn)) > 0)) ||
+        !is.null(attr(result, "is_proportion"))) {
       class(result) <- c("table2", class(result))
     }
   }

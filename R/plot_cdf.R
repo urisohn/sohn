@@ -152,8 +152,8 @@ plot_cdf <- function(y, group, data = NULL, show.ks = TRUE, show.quantiles = TRU
   n.nagroup = sum(isnagroup)
   n.nay = sum(isnay)
   
-  if (n.nagroup>0) message.col("sohn::plot_cdf() says: dropped ",n.nagroup," observations with missing '",group_name_raw,"' values",col='red4')
-  if (n.nay>0) message.col("sohn::plot_cdf() says: dropped ",n.nay," observations with missing '",y_name_raw,"' values",col='red4')
+  if (n.nagroup>0) message2("sohn::plot_cdf() says: dropped ",n.nagroup," observations with missing '",group_name_raw,"' values",col='red4')
+  if (n.nay>0) message2("sohn::plot_cdf() says: dropped ",n.nay," observations with missing '",y_name_raw,"' values",col='red4')
   
   # Get unique groups and their order
   unique_x <- unique(group)

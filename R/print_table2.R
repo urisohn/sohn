@@ -9,8 +9,18 @@ print.table2 <- function(x, ...) {
   dimn <- dimnames(x)
   dim_names <- names(dimn)
   
-  # If we don't have dimension names, fall back to default print
+  # Check if this is a proportion table
+  is_proportion <- isTRUE(attr(x, "is_proportion"))
+  
+  # If we don't have dimension names and it's not a proportion table, fall back to default print
+  if ((is.null(dim_names) || length(dim_names) != 2) && !is_proportion) {
+    return(NextMethod())
+  }
+  
+  # For proportion tables without dimension names, use default print but with custom formatting
   if (is.null(dim_names) || length(dim_names) != 2) {
+    # Still use NextMethod but the formatting should be handled by the proportion logic
+    # Actually, we need dimension names to format properly, so fall back
     return(NextMethod())
   }
   
@@ -26,11 +36,24 @@ print.table2 <- function(x, ...) {
   col_label_widths <- nchar(col_labels)
   max_col_label_width <- max(col_label_widths, na.rm = TRUE)
   
+  # Check if this is a proportion table
+  is_proportion <- isTRUE(attr(x, "is_proportion"))
+  proportion_digits <- attr(x, "proportion_digits")
+  if (is.null(proportion_digits)) proportion_digits <- 3
+  
   # Calculate width of actual data values - format each value and check width
   max_data_width <- 0
   for (i in seq_along(row_labels)) {
     for (j in seq_along(col_labels)) {
-      val_str <- as.character(x[i, j])
+      val <- x[i, j]
+      if (is_proportion) {
+        # Format as proportion without leading 0 (e.g., .100 instead of 0.100)
+        # Always show the specified number of decimals, even for 0 (.000)
+        val_rounded <- round(val * (10^proportion_digits))
+        val_str <- sprintf(paste0(".%0", proportion_digits, "d"), val_rounded)
+      } else {
+        val_str <- as.character(val)
+      }
       max_data_width <- max(max_data_width, nchar(val_str), na.rm = TRUE)
     }
   }
@@ -89,7 +112,15 @@ print.table2 <- function(x, ...) {
     # Build the row as a vector of formatted values
     row_values <- character(length(col_labels))
     for (j in seq_along(col_labels)) {
-      val_str <- as.character(x[i, j])
+      val <- x[i, j]
+      if (is_proportion) {
+        # Format as proportion without leading 0 (e.g., .100 instead of 0.100)
+        # Always show the specified number of decimals, even for 0 (.000)
+        val_rounded <- round(val * (10^proportion_digits))
+        val_str <- sprintf(paste0(".%0", proportion_digits, "d"), val_rounded)
+      } else {
+        val_str <- as.character(val)
+      }
       # Right-align the value within max_col_width
       row_values[j] <- sprintf(paste0("%", max_col_width, "s"), val_str)
     }
