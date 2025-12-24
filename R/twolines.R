@@ -25,9 +25,12 @@
 #' @param graph Integer. If 1 (default), produces a plot. If 0, no plot is generated.
 #' @param link Character string specifying the link function for the GAM model.
 #'   Default is "gaussian".
-#' @param data A data frame containing the variables in the formula.
+#' @param data An optional data frame containing the variables in the formula.
+#'   If not provided, variables are evaluated from the calling environment.
 #' @param pngfile Optional character string. If provided, saves the plot to a PNG file
 #'   with the specified filename.
+#' @param quiet Logical. If TRUE, suppresses the Robin Hood details messages.
+#'   Default is FALSE.
 #'
 #' @return A list containing:
 #' \itemize{
@@ -70,11 +73,16 @@
 #' y <- -x^2 + 0.5*z + rnorm(100)
 #' data <- data.frame(x = x, y = y, z = z)
 #' result <- twolines(y ~ x + z, data = data)
+#' 
+#' # Without data argument (variables evaluated from environment)
+#' x <- rnorm(100)
+#' y <- -x^2 + rnorm(100)
+#' result <- twolines(y ~ x)
 #' }
 #'
 #' @importFrom mgcv gam
 #' @export
-twolines <- function(f, graph = 1, link = "gaussian", data = NULL, pngfile = "") {
+twolines <- function(f, graph = 1, link = "gaussian", data = NULL, pngfile = "", quiet = FALSE) {
   #OUTLINE
   #1. Validate inputs
   #2. Extract variable names from formula
@@ -92,17 +100,49 @@ twolines <- function(f, graph = 1, link = "gaussian", data = NULL, pngfile = "")
   #14. Run final two-line regression
   #15. Combine and return results
   
-  #1. Validate inputs
-    if (is.null(data)) {
-      stop("data argument is required")
-    }
-  
-  #2. Extract variable names from formula
-    y.f <- all.vars(f)[1]  # DV
-    x.f <- all.vars(f)[2]  # Variable on which the u-shape shall be tested
+  #1. Validate inputs and handle data
+    # Get calling environment for evaluating variables
+    calling_env <- parent.frame()
+    
+    # Extract variable names from formula
+    vars <- all.vars(f)
+    y.f <- vars[1]  # DV
+    x.f <- vars[2]  # Variable on which the u-shape shall be tested
     
     # Number of variables
-    var.count <- length(all.vars(f))  # How many predictors in addition to the key predictor?
+    var.count <- length(vars)  # How many predictors in addition to the key predictor?
+    
+    # If data is NULL, create it from the calling environment
+    if (is.null(data)) {
+      # Check if variables exist before evaluating
+      missing_vars <- c()
+      for (var in vars) {
+        if (!exists(var, envir = calling_env, inherits = TRUE)) {
+          missing_vars <- c(missing_vars, var)
+        }
+      }
+      
+      if (length(missing_vars) > 0) {
+        if (length(missing_vars) == 1) {
+          stop(sprintf("twolines(): Could not find variable '%s'", missing_vars[1]), call. = FALSE)
+        } else {
+          stop(sprintf("twolines(): Could not find variables: %s", paste(missing_vars, collapse = ", ")), call. = FALSE)
+        }
+      }
+      
+      # Variables exist, create data frame from environment
+      # Create a list first, then convert to data frame
+      data_list <- list()
+      for (var in vars) {
+        data_list[[var]] <- eval(as.name(var), envir = calling_env)
+      }
+      data <- as.data.frame(data_list)
+    } else {
+      # Data provided: validate it's a data frame
+      if (!is.data.frame(data)) {
+        stop("twolines(): 'data' must be a data frame", call. = FALSE)
+      }
+    }
     
     # Entire model, except the first predictor
     if (var.count > 2) {
@@ -110,20 +150,20 @@ twolines <- function(f, graph = 1, link = "gaussian", data = NULL, pngfile = "")
     }
   
   #3. Drop missing values
-    # All variables in the regression
-    vars <- all.vars(f)
-    
-    # Vector with columns associated with those variable names in the uploaded dataset
+    # Vector with columns associated with those variable names in the dataset
     cols <- c()
     for (var in vars) {
+      if (!var %in% names(data)) {
+        stop(sprintf("twolines(): Variable '%s' not found in dataset", var), call. = FALSE)
+      }
       cols <- c(cols, which(names(data) == var))
     }
     
     # Set of complete observations
-    full.rows <- complete.cases(data[, cols])
+    full.rows <- complete.cases(data[, cols, drop = FALSE])
     
     # Drop missing rows
-    data <- data[full.rows, ]
+    data <- data[full.rows, , drop = FALSE]
   
   #4. Grab key variables
     xu <- data[[x.f]]  # xu is the key predictor predicted to be u-shaped
@@ -278,6 +318,21 @@ twolines <- function(f, graph = 1, link = "gaussian", data = NULL, pngfile = "")
   #13. Adjust breakpoint using Robin Hood procedure
     # Adjust breakpoint based on z1, z2
     xc <- quantile(xflat, z2 / (z1 + z2))
+    
+    # Print Robin Hood details (unless quiet = TRUE)
+    if (!quiet) {
+      message2("Robin Hood details", col = "blue4", font = 2)
+      message2("Most extreme value of fitted 'y' with GAM obtained at 'x' = ", round(x.most, 2), col = "blue4")
+      message2("Local range of values considered for breakpoint 'x': [", round(min(xflat), 2), ", ", round(max(xflat), 2), "]", col = "blue4")
+      message2("t-values for two lines at 'x' = ", round(x.most, 2), ":", col = "blue4")
+      message2("   t1 = ", round(z1, 2), col = "blue4")
+      message2("   t2 = ", round(z2, 2), col = "blue4")
+      qp <- z2 / (z1 + z2)
+      message2("  We compute t2/(t1+t2) = ", round(qp, 2),  col = "blue4")
+      message2(" 'x' value at that quantile of range is the Robin Hood cutoff: x = ", round(as.numeric(xc), 2), col = "blue4")
+      message2("\nNote: you may turn off this message with calculations, by setting `quiet=TRUE`",col='red4')
+      
+    }
   
   #14. Run final two-line regression
     # Save to png? (option set at the beginning by giving png a name)
@@ -309,7 +364,7 @@ twolines <- function(f, graph = 1, link = "gaussian", data = NULL, pngfile = "")
     res$midz1 <- abs(rmid$z1)
     res$midz2 <- abs(rmid$z2)
     
-    res
+    invisible(res)
 }  # End function
 
 
@@ -351,8 +406,19 @@ twolines <- function(f, graph = 1, link = "gaussian", data = NULL, pngfile = "")
 #' @keywords internal
 reg2 <- function(f, xc, graph = 1, family = "gaussian", data = NULL) {
   #OUTLINE
-  #1. Extract variable names from formula
-  #2. Grab key variables
+  #1. Validate data
+  #2. Extract variable names from formula
+  #3. Grab key variables
+  
+  #1. Validate data
+    if (is.null(data)) {
+      stop("reg2(): 'data' argument is required", call. = FALSE)
+    }
+    if (!is.data.frame(data)) {
+      stop("reg2(): 'data' must be a data frame", call. = FALSE)
+    }
+  
+  #2. Extract variable names from formula
   #3. Set up GAM formula for smoothing (accommodates discrete values)
   #4. Create interrupted regression variables (xlow1, xhigh1, high1, xlow2, xhigh2, high2)
   #5. Generate formulas for two regression lines

@@ -153,19 +153,28 @@ plot_cdf <- function(y, group, data = NULL, show.ks = TRUE, show.quantiles = TRU
       y <- data[[y_var_name]]
       group <- data[[group_var_name]]
     } else {
-      # No data: evaluate variables from calling environment
-      tryCatch({
-        y <- eval(as.name(y_var_name), envir = calling_env)
-        group <- eval(as.name(group_var_name), envir = calling_env)
-      }, error = function(e) {
-        stop(sprintf("Could not find variables '%s' and/or '%s' in the environment. Provide 'data' argument or ensure variables exist in the calling environment.", 
-                     y_var_name, group_var_name))
-      })
+      # No data: check if variables exist before evaluating
+      y_exists <- exists(y_var_name, envir = calling_env, inherits = TRUE)
+      group_exists <- exists(group_var_name, envir = calling_env, inherits = TRUE)
+      
+      if (!y_exists && !group_exists) {
+        stop(sprintf("plot_cdf(): Could not find variables '%s' and '%s'", y_var_name, group_var_name), call. = FALSE)
+      } else if (!y_exists) {
+        stop(sprintf("plot_cdf(): Could not find variable '%s'", y_var_name), call. = FALSE)
+      } else if (!group_exists) {
+        stop(sprintf("plot_cdf(): Could not find variable '%s'", group_var_name), call. = FALSE)
+      }
+      
+      # Variables exist, now evaluate them
+      y <- eval(as.name(y_var_name), envir = calling_env)
+      group <- eval(as.name(group_var_name), envir = calling_env)
     }
     
-    # Set names for labels
+    # Set names for labels and raw names (used in error messages)
     y_name <- y_var_name
     group_name <- group_var_name
+    y_name_raw <- y_var_name
+    group_name_raw <- group_var_name
   } else {
     # Standard syntax: y, group
     # Capture y name for xlab (before potentially overwriting y)
