@@ -4,11 +4,16 @@
 #' each unique value of a grouping variable, with support for vectorized
 #' plotting parameters.
 #'
-#' @param y A numeric vector of values to compute ECDFs for, or a column name
-#'   (character string or unquoted) if \code{data} is provided.
+#' @param y A numeric vector of values to compute ECDFs for, a column name
+#'   (character string or unquoted) if \code{data} is provided, or a formula
+#'   of the form \code{y ~ group} where \code{y} is the response variable and
+#'   \code{group} is the grouping variable.
 #' @param group A vector (factor, character, or numeric) used to group the data,
 #'   or a column name (character string or unquoted) if \code{data} is provided.
+#'   Ignored if \code{y} is a formula.
 #' @param data An optional data frame containing the variables \code{y} and \code{group}.
+#'   If \code{y} is a formula and \code{data} is not provided, variables are
+#'   evaluated from the calling environment.
 #' @param show.ks Logical. If TRUE (default), shows Kolmogorov-Smirnov test results
 #'   when there are exactly 2 groups. If FALSE, KS test results are not displayed.
 #' @param show.quantiles Logical. If TRUE (default), shows horizontal lines and results
@@ -90,27 +95,21 @@
 #' plot_cdf("value", "group", data = df)  # quoted column names also work
 #' plot_cdf(value, group, data = df, col = c("red", "blue"))
 #'
+#' # Using formula syntax
+#' plot_cdf(value ~ group, data = df)
+#' plot_cdf(value ~ group, data = df, col = c("red", "blue"))
+#' 
+#' # Formula syntax without data (variables evaluated from environment)
+#' widgetness <- rnorm(100)
+#' gender <- rep(c("M", "F"), 50)
+#' plot_cdf(widgetness ~ gender)
+#'
 #' @export
 plot_cdf <- function(y, group, data = NULL, show.ks = TRUE, show.quantiles = TRUE, ...) {
-  # Capture y name for xlab (before potentially overwriting y)
-  y_name_raw <- deparse(substitute(y))
-  # Remove quotes if present (handles both y = "col" and y = col)
-  y_name_raw <- gsub('^"|"$', '', y_name_raw)
-  y_name <- if (grepl("\\$", y_name_raw)) {
-    strsplit(y_name_raw, "\\$")[[1]][length(strsplit(y_name_raw, "\\$")[[1]])]
-  } else {
-    y_name_raw
-  }
-  
-  # Capture group name for legend title (before potentially overwriting group)
-    group_name_raw <- deparse(substitute(group))
-    # Remove quotes if present (handles both group = "col" and group = col)
-    group_name_raw <- gsub('^"|"$', '', group_name_raw)
-    group_name <- if (grepl("\\$", group_name_raw)) {
-      strsplit(group_name_raw, "\\$")[[1]][length(strsplit(group_name_raw, "\\$")[[1]])]
-    } else {
-      group_name_raw
-    }
+  # Capture data name for error messages (before potentially overwriting)
+  data_name <- deparse(substitute(data))
+  # Remove quotes if present
+  data_name <- gsub('^"|"$', '', data_name)
   
   # Extract plotting parameters from ...
     dots <- list(...)
@@ -119,23 +118,94 @@ plot_cdf <- function(y, group, data = NULL, show.ks = TRUE, show.quantiles = TRU
     dots$show.ks <- NULL
     dots$show.quantiles <- NULL
   
-  # Handle data frame if provided
-  if (!is.null(data)) {
-    if (!is.data.frame(data)) {
-      stop("'data' must be a data frame")
+  # Check if y is a formula
+  is_formula <- inherits(y, "formula")
+  
+  if (is_formula) {
+    # Formula syntax: y ~ group
+    # Extract variable names from formula
+    formula_vars <- all.vars(y)
+    if (length(formula_vars) != 2) {
+      stop("Formula must have exactly two variables: response ~ group")
     }
     
-    # Extract columns from data frame
-    # Use raw names for column lookup (they may include df$ prefix)
-    if (!y_name_raw %in% names(data)) {
-      stop(sprintf("Column '%s' not found in data", y_name_raw))
-    }
-    if (!group_name_raw %in% names(data)) {
-      stop(sprintf("Column '%s' not found in data", group_name_raw))
+    y_var_name <- formula_vars[1]
+    group_var_name <- formula_vars[2]
+    
+    # Get calling environment for evaluating variables
+    calling_env <- parent.frame()
+    
+    if (!is.null(data)) {
+      # Data provided: extract from data frame
+      if (!is.data.frame(data)) {
+        stop("'data' must be a data frame")
+      }
+      
+      # Check if variables exist in data
+      if (!y_var_name %in% names(data)) {
+        stop(sprintf("Variable \"%s\" not found in dataset \"%s\"", y_var_name, data_name))
+      }
+      if (!group_var_name %in% names(data)) {
+        stop(sprintf("Variable \"%s\" not found in dataset \"%s\"", group_var_name, data_name))
+      }
+      
+      # Extract variables from data
+      y <- data[[y_var_name]]
+      group <- data[[group_var_name]]
+    } else {
+      # No data: evaluate variables from calling environment
+      tryCatch({
+        y <- eval(as.name(y_var_name), envir = calling_env)
+        group <- eval(as.name(group_var_name), envir = calling_env)
+      }, error = function(e) {
+        stop(sprintf("Could not find variables '%s' and/or '%s' in the environment. Provide 'data' argument or ensure variables exist in the calling environment.", 
+                     y_var_name, group_var_name))
+      })
     }
     
-    y <- data[[y_name_raw]]
-    group <- data[[group_name_raw]]
+    # Set names for labels
+    y_name <- y_var_name
+    group_name <- group_var_name
+  } else {
+    # Standard syntax: y, group
+    # Capture y name for xlab (before potentially overwriting y)
+    y_name_raw <- deparse(substitute(y))
+    # Remove quotes if present (handles both y = "col" and y = col)
+    y_name_raw <- gsub('^"|"$', '', y_name_raw)
+    y_name <- if (grepl("\\$", y_name_raw)) {
+      strsplit(y_name_raw, "\\$")[[1]][length(strsplit(y_name_raw, "\\$")[[1]])]
+    } else {
+      y_name_raw
+    }
+    
+    # Capture group name for legend title (before potentially overwriting group)
+      group_name_raw <- deparse(substitute(group))
+      # Remove quotes if present (handles both group = "col" and group = col)
+      group_name_raw <- gsub('^"|"$', '', group_name_raw)
+      group_name <- if (grepl("\\$", group_name_raw)) {
+        strsplit(group_name_raw, "\\$")[[1]][length(strsplit(group_name_raw, "\\$")[[1]])]
+      } else {
+        group_name_raw
+      }
+    
+    # Handle data frame if provided
+    if (!is.null(data)) {
+      if (!is.data.frame(data)) {
+        stop("'data' must be a data frame")
+      }
+      
+      # Extract columns from data frame
+      # Use raw names for column lookup (they may include df$ prefix)
+      if (!y_name_raw %in% names(data)) {
+        stop(sprintf("Column \"%s\" not found in dataset \"%s\"", y_name_raw, data_name))
+      }
+      if (!group_name_raw %in% names(data)) {
+        stop(sprintf("Column \"%s\" not found in dataset \"%s\"", group_name_raw, data_name))
+      }
+      
+      y <- data[[y_name_raw]]
+      group <- data[[group_name_raw]]
+    }
   }
   
   # Validate that y is a numeric vector

@@ -7,13 +7,18 @@
 plot_cdf(y, group, data = NULL, show.ks = TRUE, show.quantiles = TRUE, ...)
 }
 \arguments{
-\item{y}{A numeric vector of values to compute ECDFs for, or a column name
-(character string or unquoted) if \code{data} is provided.}
+\item{y}{A numeric vector of values to compute ECDFs for, a column name
+(character string or unquoted) if \code{data} is provided, or a formula
+of the form \code{y ~ group} where \code{y} is the response variable and
+\code{group} is the grouping variable.}
 
 \item{group}{A vector (factor, character, or numeric) used to group the data,
-or a column name (character string or unquoted) if \code{data} is provided.}
+or a column name (character string or unquoted) if \code{data} is provided.
+Ignored if \code{y} is a formula.}
 
-\item{data}{An optional data frame containing the variables \code{y} and \code{group}.}
+\item{data}{An optional data frame containing the variables \code{y} and \code{group}.
+If \code{y} is a formula and \code{data} is not provided, variables are
+evaluated from the calling environment.}
 
 \item{show.ks}{Logical. If TRUE (default), shows Kolmogorov-Smirnov test results
 when there are exactly 2 groups. If FALSE, KS test results are not displayed.}
@@ -103,5 +108,14 @@ df <- data.frame(value = rnorm(100), group = rep(c("A", "B"), 50))
 plot_cdf(value, group, data = df)
 plot_cdf("value", "group", data = df)  # quoted column names also work
 plot_cdf(value, group, data = df, col = c("red", "blue"))
+
+# Using formula syntax
+plot_cdf(value ~ group, data = df)
+plot_cdf(value ~ group, data = df, col = c("red", "blue"))
+
+# Formula syntax without data (variables evaluated from environment)
+widgetness <- rnorm(100)
+gender <- rep(c("M", "F"), 50)
+plot_cdf(widgetness ~ gender)
 
 }
