@@ -281,7 +281,11 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
       }
     }
     
-    
+    # Re-set attributes after all modifications (rbind/cbind may have created new objects)
+    if (!is.null(prop)) {
+      attr(result, "is_proportion") <- TRUE
+      attr(result, "proportion_digits") <- digits
+    }
   }
   
   # TASK 9: Return the enhanced table object
@@ -290,7 +294,7 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
     dimn <- dimnames(result)
     # Add class if we have variable names OR if it's a proportion table
     if ((length(dots) == 2 && !is.null(names(dimn)) && any(nchar(names(dimn)) > 0)) ||
-        !is.null(attr(result, "is_proportion"))) {
+        isTRUE(attr(result, "is_proportion"))) {
       class(result) <- c("table2", class(result))
     }
   }

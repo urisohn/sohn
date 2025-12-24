@@ -18,9 +18,9 @@ message2(
 \item{...}{One or more R objects that can be coerced to character and pasted together.}
 
 \item{col}{Character string specifying the color. Can be any color name (e.g., "cyan", 
-  "red", "blue", "dodgerblue", etc.). Default is "cyan". For ANSI terminal colors, 
-  standard colors (black, red, green, yellow, blue, magenta, cyan, white) will be used 
-  directly; other colors will default to "cyan".}
+"red", "blue", "dodgerblue", etc.). Default is "cyan". For ANSI terminal colors, 
+standard colors (black, red, green, yellow, blue, magenta, cyan, white) will be used 
+directly; other colors will default to "cyan".}
 
 \item{font}{Integer. 1 for plain text (default), 2 for bold text.}
 
@@ -45,5 +45,6 @@ message2("This is a plain cyan message", col = "cyan", font = 1)
 message2("This is a bold cyan message", col = "cyan", font = 2)
 message2("This is a bold red message", col = "red", font = 2)
 message2("This stops execution", stop = TRUE)
+
 }
 

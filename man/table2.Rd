@@ -32,18 +32,20 @@ that can be matched by name.}
 \item{prop}{Numeric or character. If specified, converts table to proportions:
 \itemize{
   \item \code{prop=0} or \code{prop="all"}: Proportions of the whole table (each cell / total)
-  \item \code{prop=1} or \code{prop="row"}: Proportions by rows (each row sums to 1)
-  \item \code{prop=2} or \code{prop="column"}: Proportions by columns (each column sums to 1)
+  \item \code{prop=1}, \code{prop="row"}, or \code{prop="rows"}: Proportions by rows (each row sums to 1)
+  \item \code{prop=2}, \code{prop="col"}, \code{prop="column"}, or \code{prop="columns"}: Proportions by columns (each column sums to 1)
 }
 If \code{NULL} (default), returns frequency counts.}
 
 \item{digits}{Number of decimal places to display when \code{prop} is specified.
-Default is 3. Only applies when \code{prop} is not \code{NULL}.}
+Default is 3. Values are displayed as proportions without leading zero (e.g., .100, .110, .111).
+Only applies when \code{prop} is not \code{NULL}.}
 }
 \value{
 A contingency table (an object of class "table") with enhanced
   dimnames when variables come from a dataframe. If \code{prop} is specified,
-  the table contains proportions instead of counts.
+  the table contains proportions (between 0 and 1) instead of counts, and
+  values are displayed without leading zero (e.g., .100 instead of 0.100).
 }
 \description{
 Identical to base R's \code{table()}, except that when tabulating two variables
@@ -76,6 +78,6 @@ table2(df$group, df$status, prop = 0)  # Overall proportions
 table2(df$group, df$status, prop = 1)  # Row proportions
 table2(df$group, df$status, prop = 2)  # Column proportions
 table2(df$group, df$status, prop = "row")  # Row proportions (character)
-table2(df$group, df$status, prop = 1, digits = 2)  # Row proportions with 2 decimals
+table2(df$group, df$status, prop = 1, digits = 3)  # Row proportions with 3 decimals
 
 }
