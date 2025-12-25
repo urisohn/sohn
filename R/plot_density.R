@@ -12,9 +12,7 @@
 #'   for 2-3 groups. For 2 groups, low mean uses pos=2 and high mean uses pos=4.
 #'   For 3 groups, mid mean uses pos=3. For 4+ groups, vertical segments are not shown.
 #' @param show.t Logical. If TRUE (default), shows points at means, vertical segments,
-#'   mean labels, and t-test results. If FALSE, none of these are displayed.
-#' @param show.ks Logical. If TRUE (default), shows Kolmogorov-Smirnov test results
-#'   when there are exactly 2 groups. If FALSE, KS test results are not displayed.
+#'   and mean labels. If FALSE, none of these are displayed.
 #' @param ... Additional arguments passed to plotting functions. Can be scalars
 #'   (applied to all groups) or vectors (applied element-wise to each group).
 #'   Common parameters include \code{col}, \code{lwd}, \code{lty}, \code{pch},
@@ -24,11 +22,6 @@
 #' @return Invisibly returns a list containing:
 #' \itemize{
 #'   \item \code{densities}: A list of density objects, one for each group
-#'   \item \code{ks_test}: (when 2 groups) The Kolmogorov-Smirnov test result
-#'   \item \code{warnings}: (when warnings occur) A list of captured warnings, including:
-#'     \itemize{
-#'       \item \code{ks_ties}: Warning about ties in KS test (if present)
-#'     }
 #' }
 #'
 #' @details
@@ -56,12 +49,6 @@
 #'   \item 5+ groups: extends with additional colors
 #' }
 #'
-#' When there are exactly 2 groups, the function automatically performs:
-#' \itemize{
-#'   \item Kolmogorov-Smirnov test for distribution equality
-#'   \item Displays test results in the bottom right corner
-#' }
-#'
 #' @examples
 #' # Basic usage
 #' y <- rnorm(100)
@@ -87,7 +74,7 @@
 #' plot_density(value, group, data = df, col = c("red", "blue"))
 #'
 #' @export
-plot_density <- function(y, group, data = NULL, show.t = TRUE, show.ks = TRUE, ...) {
+plot_density <- function(y, group, data = NULL, show.t = TRUE, ...) {
   #OUTLINE
   #1. Capture variable names for labels
   #2. Extract and handle parameters
@@ -109,10 +96,26 @@ plot_density <- function(y, group, data = NULL, show.t = TRUE, show.ks = TRUE, .
   #18. Add points at y=0 and x=mean with labels
   #19. Add vertical segments at means (if show.means=TRUE and 2-3 groups)
   #20. Add legend
-  #21. Perform KS test (if 2 groups)
-  #22. Return densities and test results
+  #21. Return densities
   
-  #1. Extract and handle parameters
+  #1. Capture variable names BEFORE calling validate_plot
+  # Capture the actual variable names from the function call
+  y_expr <- substitute(y)
+  group_expr <- substitute(group)
+  y_name_raw <- deparse(y_expr)
+  group_name_raw <- deparse(group_expr)
+  # Remove quotes if present
+  y_name_raw <- gsub('^"|"$', '', y_name_raw)
+  group_name_raw <- gsub('^"|"$', '', group_name_raw)
+  # Extract column name if it's df$var format
+  if (grepl("\\$", y_name_raw)) {
+    y_name_raw <- strsplit(y_name_raw, "\\$")[[1]][length(strsplit(y_name_raw, "\\$")[[1]])]
+  }
+  if (grepl("\\$", group_name_raw)) {
+    group_name_raw <- strsplit(group_name_raw, "\\$")[[1]][length(strsplit(group_name_raw, "\\$")[[1]])]
+  }
+  
+  #2. Extract and handle parameters
   # Extract plotting parameters from ...
     dots <- list(...)
     
@@ -120,14 +123,13 @@ plot_density <- function(y, group, data = NULL, show.t = TRUE, show.ks = TRUE, .
     show_means <- if ("show.means" %in% names(dots)) dots$show.means else TRUE
     dots$show.means <- NULL  # Remove from dots so it doesn't get passed to plot functions
   
-  #2. Validate inputs using validation function shared with plot_density, plot_cdf, plot_freq
+  #3. Validate inputs using validation function shared with plot_density, plot_cdf, plot_freq
   validated <- validate_plot(y, group, data, func_name = "plot_density", require_group = TRUE)
   y <- validated$y
   group <- validated$group
-  y_name <- validated$y_name
-  group_name <- validated$group_name
-  y_name_raw <- validated$y_name_raw
-  group_name_raw <- validated$group_name_raw
+  # Use the names we captured above instead of from validate_plot
+  y_name <- y_name_raw
+  group_name <- group_name_raw
   
   #3. Drop missing data
     isnagroup=is.na(group)
@@ -146,8 +148,6 @@ plot_density <- function(y, group, data = NULL, show.t = TRUE, show.ks = TRUE, .
     n_groups <- length(unique_x)
   
   #6. Initialize return values
-    ks_test_result <- NULL
-    warnings_list <- list()
   
   #7. Get default colors based on number of groups
     default_colors <- get.colors(n_groups) #See utils.R
@@ -225,6 +225,7 @@ plot_density <- function(y, group, data = NULL, show.t = TRUE, show.ks = TRUE, .
     # Build plot arguments
     # Set main title if not provided
       if (!"main" %in% names(plot_params)) {
+        # Use the captured variable names (e.g., "value" and "cond" instead of "y" and "group")
         main_title <- paste0("Comparing Distribution of '", y_name, "' by '", group_name, "'")
       } else {
         main_title <- plot_params$main
@@ -342,17 +343,6 @@ plot_density <- function(y, group, data = NULL, show.t = TRUE, show.ks = TRUE, .
             low_idx <- sorted_indices[1]
             high_idx <- sorted_indices[2]
             
-          # Get data for both groups
-            y_low <- y[group == unique_x[low_idx]]
-            y_high <- y[group == unique_x[high_idx]]
-            
-          # Perform t-test
-            t_test <- t.test(y_low, y_high)
-            t_stat <- round(t_test$statistic, 2)
-            t_df <- round(t_test$parameter, 0)
-            t_p <- format_pvalue(t_test$p.value, include_p = FALSE)
-            t_label <- paste0("t-test: t(", t_df, ") = ", t_stat, ",  p ", t_p)
-          
           # Low mean segment
             coli_low <- get_param("col", low_idx) %||% default_colors[low_idx]
             segments(x0 = sorted_means[1], y0 = 0, x1 = sorted_means[1], y1 = y_max_segment,
@@ -369,15 +359,6 @@ plot_density <- function(y, group, data = NULL, show.t = TRUE, show.ks = TRUE, .
             text(x = sorted_means[2], y = y_max_segment, 
                  labels = paste0("M=", round(sorted_means[2], 2)),
                  pos = 4, col = coli_high, cex = 0.8, font = 2)
-          
-            
-          # Get plot height and move up 3% of plot height
-            usr <- par("usr")
-            y_range <- usr[4] - usr[3]
-            y_offset <- y_range * 0.03
-            text(x =  mean(sorted_means), y = y_max_segment + y_offset, 
-                 labels = t_label,
-                 col = "black", cex = .85, font = 1)
             
         } else if (n_groups == 3) {
           # Show all three means: Low (pos=2), Mid (pos=3), High (pos=4)
@@ -385,11 +366,6 @@ plot_density <- function(y, group, data = NULL, show.t = TRUE, show.ks = TRUE, .
           mid_idx <- sorted_indices[2]
           high_idx <- sorted_indices[3]
           
-          # Get data for all groups
-            y_low <- y[group == unique_x[low_idx]]
-            y_mid <- y[group == unique_x[mid_idx]]
-            y_high <- y[group == unique_x[high_idx]]
-            
           # Low mean segment
             coli_low <- get_param("col", low_idx) %||% default_colors[low_idx]
             segments(x0 = sorted_means[1], y0 = 0, x1 = sorted_means[1], y1 = y_max_segment,
@@ -424,80 +400,29 @@ plot_density <- function(y, group, data = NULL, show.t = TRUE, show.ks = TRUE, .
       legend_lwds <- sapply(1:length(density_list), function(i) get_param("lwd", i) %||% 4)
       legend_ltys <- sapply(1:length(density_list), function(i) get_param("lty", i) %||% 1)
       
-      # Create legend labels with group name and sample size (mean removed)
+      # Create legend labels with group value and sample size
       legend_labels <- character(length(density_list))
       for (i in seq_along(density_list)) {
         group_val <- unique_x[i]
-        y_group <- y[x == group_val]
+        y_group <- y[group == group_val]
         group_n <- length(y_group)
         
-        # Format: group_name\nN=sample_size
-        legend_labels[i] <- paste0(group_name, "='", as.character(group_val), "'\n",
+        # Format: 'value'\nN=sample_size
+        legend_labels[i] <- paste0("'", as.character(group_val), "'\n",
                                    "N=", group_n)
       }
       
       legend("top", legend = legend_labels, 
              col = legend_cols, lwd = legend_lwds, lty = legend_ltys,
              horiz = TRUE, bty = "n")
-    
-    #21. Perform KS test (if 2 groups)
-    # If exactly 2 groups, perform KS test
-      if (n_groups == 2) {
-        # Get data for both groups
-        y1 <- y[group == unique_x[1]]
-        y2 <- y[group == unique_x[2]]
-        
-        # Kolmogorov-Smirnov test (capture warnings about ties)
-        ks_test <- withCallingHandlers(
-          ks.test(y1, y2),
-          warning = function(w) {
-            if (grepl("p-value will be approximate in the presence of ties", w$message, ignore.case = TRUE)) {
-              warnings_list$ks_ties <<- w$message
-              invokeRestart("muffleWarning")
-            }
-          }
-        )
-        ks_test_result <- ks_test
-        
-        # Add KS test results in bottom right corner (only if show.ks is TRUE)
-        if (show.ks) {
-          ks_d <- round(ks_test$statistic, 3)
-          ks_p <- format_pvalue(ks_test$p.value, include_p = TRUE)
-          
-          usr <- par("usr")
-          x_range <- usr[2] - usr[1]
-          y_range <- usr[4] - usr[3]
-          #  KS result 
-          #p-value
-          ks_p_formatted <- format_pvalue(ks_test$p.value, include_p = TRUE)
-          
-          #Full
-          ks_values <- paste0("Kolmogorov-Smirnov\nD = ", ks_d, "\n", ks_p_formatted)
-          
-          #Print it
-          text(x = usr[2] - 0.02 * x_range, y = usr[3] + 0.02 * y_range, 
-               labels = ks_values,
-               adj = c(1, 0), cex = 0.8, font = 1)
-        }
-      }
   }
   
-  #22. Return densities and test results
-  # Return densities and test results
+  #21. Return densities
+  # Return densities
     names(density_list) <- as.character(unique_x)
   
   # Build return list
     result <- list(densities = density_list)
-  
-  # Add test results if 2 groups
-    if (n_groups == 2) {
-      result$ks_test <- ks_test_result
-    }
-  
-  # Add warnings if any were captured
-    if (length(warnings_list) > 0) {
-      result$warnings <- warnings_list
-    }
   
   invisible(result)
 }
