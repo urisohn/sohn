@@ -8,6 +8,7 @@ print.table2 <- function(x, ...) {
   # Get dimension names
   dimn <- dimnames(x)
   dim_names <- names(dimn)
+  n_dims <- length(dim(x))
   
   # Check if this is a proportion table (check once)
   # Use !is.null() instead of isTRUE() to be more robust
@@ -15,6 +16,41 @@ print.table2 <- function(x, ...) {
   proportion_digits <- attr(x, "proportion_digits")
   if (is.null(proportion_digits)) proportion_digits <- 3
   
+  # Handle 3D tables
+  if (n_dims == 3) {
+    if (is.null(dim_names) || length(dim_names) != 3) {
+      return(NextMethod())
+    }
+    
+    third_var_name <- dim_names[3]
+    third_labels <- dimn[[3]]
+    
+    # Print each slice of the 3D table
+    for (k in seq_along(third_labels)) {
+      # Print the third dimension header (e.g., "heat = high" instead of ", , heat = high")
+      cat("\n")
+      cat(third_var_name, " = ", third_labels[k], "\n", sep = "")
+      
+      # Extract the 2D slice
+      slice <- x[, , k, drop = FALSE]
+      # Remove the third dimension to make it a 2D table
+      dim(slice) <- dim(slice)[1:2]
+      dimnames(slice) <- dimn[1:2]
+      class(slice) <- c("table2", class(slice))
+      # Copy attributes
+      if (is_proportion) {
+        attr(slice, "is_proportion") <- TRUE
+        attr(slice, "proportion_digits") <- proportion_digits
+      }
+      
+      # Print the 2D slice using the same print method
+      print.table2(slice, ...)
+    }
+    
+    return(invisible(x))
+  }
+  
+  # Handle 2D tables (original code)
   # If we don't have dimension names and it's not a proportion table, fall back to default print
   if ((is.null(dim_names) || length(dim_names) != 2) && !is_proportion) {
     return(NextMethod())

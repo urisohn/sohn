@@ -47,3 +47,4 @@ message2("This is a bold red message", col = "red", font = 2)
 message2("This stops execution", stop = TRUE)
 
 }
+

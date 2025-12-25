@@ -1,7 +1,7 @@
 #' Enhanced table() by showing variable name and allowing proportions as results
 #'
-#' Identical to base R's \code{table()}, except that when tabulating two variables
-#' from a dataframe, the variable names are displayed in the row/column names, and that
+#' Identical to base R's \code{table()}, except that when tabulating two or three variables
+#' from a dataframe, the variable names are displayed in the dimension names, and that
 #' \code{prop} argument allows reporting proportions, bypassing need for \code{prop.table(table())}
 #'
 #' @param ... One or more objects which can be interpreted as factors (including
@@ -30,10 +30,11 @@
 #'   values are displayed without leading zero (e.g., .100 instead of 0.100).
 #'
 #' @details
-#' When tabulating two variables from a dataframe (e.g., \code{table2(df$x, df$y)}),
-#' the variable names appear as dimension names in the table margins, while
-#' row and column labels show only the values. This creates a cleaner cross-tabulation
-#' format with variable names as headers.
+#' When tabulating two or three variables from a dataframe (e.g., \code{table2(df$x, df$y)} or
+#' \code{table2(df$x, df$y, df$z)}), the variable names appear as dimension names in the table
+#' margins, while row and column labels show only the values. This creates a cleaner cross-tabulation
+#' format with variable names as headers. For 3D tables, the third variable name appears in the
+#' slice headers (e.g., \code{, , var = value}).
 #'
 #' @examples
 #' # Create example data
@@ -42,8 +43,16 @@
 #'   status = c("X", "Y", "X", "Y", "X")
 #' )
 #'
-#' # Enhanced table with variable names
+#' # Enhanced table with variable names (2 variables)
 #' table2(df$group, df$status)
+#'
+#' # Enhanced table with variable names (3 variables)
+#' df3 <- data.frame(
+#'   x = c("A", "A", "B", "B"),
+#'   y = c("X", "Y", "X", "Y"),
+#'   z = c("high", "low", "high", "low")
+#' )
+#' table2(df3$x, df3$y, df3$z)
 #'
 #' # Regular table (no variable names)
 #' x <- c("A", "A", "B")
@@ -97,20 +106,20 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
   }
   
   # TASK 4: Extract variable names from dataframe column references
-  # Only enhance if we have exactly 2 dimensions and 2 arguments
-  if (length(dim(result)) == 2 && length(dots) == 2) {
-    var_names <- character(2)
+  # Enhance if we have 2 or 3 dimensions matching the number of arguments
+  n_dims <- length(dim(result))
+  if ((n_dims == 2 && length(dots) == 2) || (n_dims == 3 && length(dots) == 3)) {
+    var_names <- character(n_dims)
     
-    # Try to extract variable names from expressions
-    for (i in 1:2) {
-      expr <- dot_expressions[[i]]
-      
+    # Helper function to extract variable name from an expression
+    extract_var_name <- function(expr) {
+      var_name <- ""
       # Check if it's a dataframe column reference: df$var
       if (is.call(expr) && length(expr) >= 3) {
         op <- expr[[1]]
         # Handle df$var
         if (identical(op, quote(`$`)) || identical(op, as.name("$"))) {
-          var_names[i] <- as.character(expr[[3]])
+          var_name <- as.character(expr[[3]])
         }
         # Handle df[["var"]] or df[, "var"] or df[, i]
         else if (identical(op, quote(`[`)) || identical(op, as.name("["))) {
@@ -118,12 +127,12 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
             col_expr <- expr[[3]]
             # Handle df[["var"]] - double bracket with character
             if (is.character(col_expr) && length(col_expr) == 1) {
-              var_names[i] <- col_expr
+              var_name <- col_expr
             }
             # Handle df[, "var"] - single bracket with character column name
             else if (is.call(col_expr) && identical(col_expr[[1]], quote(`[`)) && 
                      length(col_expr) >= 2 && is.character(col_expr[[2]])) {
-              var_names[i] <- col_expr[[2]]
+              var_name <- col_expr[[2]]
             }
             # Handle df[, i] where i is a name or number
             else if (is.name(col_expr)) {
@@ -131,13 +140,20 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
               tryCatch({
                 val <- eval(col_expr, parent.frame())
                 if (is.character(val) && length(val) == 1) {
-                  var_names[i] <- val
+                  var_name <- val
                 }
               }, error = function(e) {})
             }
           }
         }
       }
+      return(var_name)
+    }
+    
+    # Try to extract variable names from expressions
+    for (i in 1:n_dims) {
+      expr <- dot_expressions[[i]]
+      var_names[i] <- extract_var_name(expr)
     }
     
     # TASK 5 & 6: FORMAT HEADERS - Set variable names and labels
@@ -147,17 +163,17 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
       
       # TASK 5: FORMAT HEADERS - Set variable names as dimension names
       # These appear in margins when printed (column var on top, row var on left)
-      if (nchar(var_names[1]) > 0) {
-        names(dimn)[1] <- var_names[1]  # Row variable name (appears on left margin)
-      }
-      
-      if (nchar(var_names[2]) > 0) {
-        names(dimn)[2] <- var_names[2]  # Column variable name (appears on top margin)
+      # For 3D tables, the third dimension name appears in the slice headers
+      for (i in 1:n_dims) {
+        if (nchar(var_names[i]) > 0) {
+          names(dimn)[i] <- var_names[i]
+        }
       }
       
       # TASK 6: FORMAT HEADERS - Keep row and column labels as just the values
       # Row labels: dimn[[1]] contains just values (e.g., "A", "B", "C")
       # Column labels: dimn[[2]] contains just values (e.g., "1", "2", "3")
+      # Third dimension labels: dimn[[3]] contains just values (e.g., "high", "low")
       # The variable names will appear in the margins via names(dimnames)
       dimnames(result) <- dimn
     }
@@ -289,11 +305,16 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
   }
   
   # TASK 9: Return the enhanced table object
-  # Add class for custom printing if we have 2D table with variable names or if it's a proportion table
-  if (length(dim(result)) == 2) {
+  # Add class for custom printing if we have 2D or 3D table with variable names or if it's a proportion table
+  n_dims <- length(dim(result))
+  if (n_dims == 2 || n_dims == 3) {
     dimn <- dimnames(result)
     # Add class if we have variable names OR if it's a proportion table
-    if ((length(dots) == 2 && !is.null(names(dimn)) && any(nchar(names(dimn)) > 0)) ||
+    # For 2D: check if we have 2 dots and variable names
+    # For 3D: check if we have 3 dots and variable names
+    has_var_names <- (n_dims == 2 && length(dots) == 2) || 
+                     (n_dims == 3 && length(dots) == 3)
+    if ((has_var_names && !is.null(names(dimn)) && any(nchar(names(dimn)) > 0)) ||
         isTRUE(attr(result, "is_proportion"))) {
       class(result) <- c("table2", class(result))
     }
