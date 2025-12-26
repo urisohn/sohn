@@ -42,7 +42,7 @@ This package contains various utility functions organized into the following cat
 \section{Data Management}{
 
 \itemize{
-  \item \code{\link{namedList}}: Create lists with automatic naming
+  \item \code{\link{list2}}: Create lists with automatic naming
   \item \code{\link{convert_to_sql}}: Convert CSV files to SQL INSERT statements
   \item \code{\link{clear}}: Clear environment, console, and all graphics devices
 }

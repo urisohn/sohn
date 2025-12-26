@@ -3,11 +3,10 @@
 #' Plots density functions separately for each unique value of a grouping
 #' variable.
 #'
-#' @param y A numeric vector of values to compute densities for, or a column name
-#'   (character string or unquoted) if \code{data} is provided.
-#' @param group A vector (factor, character, or numeric) used to group the data,
-#'   or a column name (character string or unquoted) if \code{data} is provided.
-#' @param data An optional data frame containing the variables \code{y} and \code{group}.
+#' @param formula A formula of the form \code{y ~ group} where \code{y} is the
+#'   response variable and \code{group} is the grouping variable.
+#' @param data An optional data frame containing the variables in the formula.
+#'   If \code{data} is not provided, variables are evaluated from the calling environment.
 #' @param show.t Logical. If TRUE (default), shows points at means, vertical segments,
 #'   and mean labels. If FALSE, none of these are displayed.
 #' @param ... Additional arguments passed to plotting functions. Can be scalars
@@ -27,11 +26,11 @@
 #' @details
 #' This function:
 #' \itemize{
-#'   \item Splits \code{y} by unique values of \code{group}
+#'   \item Splits the response variable by unique values of the grouping variable
 #'   \item Computes a density estimate for each group
 #'   \item Plots all densities on the same graph
 #'   \item Handles plotting parameters: scalars apply to all groups, vectors
-#'     apply element-wise to groups (in order of unique \code{group} values)
+#'     apply element-wise to groups (in order of unique grouping variable values)
 #' }
 #'
 #' The densities are plotted as smooth curves. Parameters like
@@ -50,31 +49,30 @@
 #' }
 #'
 #' @examples
-#' # Basic usage
+#' # Basic usage with formula syntax
 #' y <- rnorm(100)
 #' group <- rep(c("A", "B", "C"), c(30, 40, 30))
-#' plot_density(y, group)
+#' plot_density(y ~ group)
 #'
 #' # With custom colors (scalar - same for all)
-#' plot_density(y, group, col = "blue")
+#' plot_density(y ~ group, col = "blue")
 #'
 #' # With custom colors (vector - different for each group)
-#' plot_density(y, group, col = c("red", "green", "blue"))
+#' plot_density(y ~ group, col = c("red", "green", "blue"))
 #'
 #' # Multiple parameters
-#' plot_density(y, group, col = c("red", "green", "blue"), lwd = c(1, 2, 3))
+#' plot_density(y ~ group, col = c("red", "green", "blue"), lwd = c(1, 2, 3))
 #'
 #' # With line type
-#' plot_density(y, group, col = c("red", "green", "blue"), lty = c(1, 2, 3), lwd = 2)
+#' plot_density(y ~ group, col = c("red", "green", "blue"), lty = c(1, 2, 3), lwd = 2)
 #'
 #' # Using data frame
 #' df <- data.frame(value = rnorm(100), group = rep(c("A", "B"), 50))
-#' plot_density(value, group, data = df)
-#' plot_density("value", "group", data = df)  # quoted column names also work
-#' plot_density(value, group, data = df, col = c("red", "blue"))
+#' plot_density(value ~ group, data = df)
+#' plot_density(value ~ group, data = df, col = c("red", "blue"))
 #'
 #' @export
-plot_density <- function(y, group, data = NULL, show.t = TRUE, ...) {
+plot_density <- function(formula, data = NULL, show.t = TRUE, ...) {
   #OUTLINE
   #1. Capture variable names for labels
   #2. Extract and handle parameters
@@ -107,7 +105,8 @@ plot_density <- function(y, group, data = NULL, show.t = TRUE, ...) {
     dots$show.means <- NULL  # Remove from dots so it doesn't get passed to plot functions
   
   #2. Validate inputs using validation function shared with plot_density, plot_cdf, plot_freq
-  validated <- validate_plot(y, group, data, func_name = "plot_density", require_group = TRUE)
+  # Only formula syntax is supported
+  validated <- validate_plot(formula, NULL, data, func_name = "plot_density", require_group = TRUE)
   y <- validated$y
   group <- validated$group
   y_name <- validated$y_name

@@ -5,15 +5,14 @@
 \title{Plot frequencies of a variable, optionally by group (histogram without binning)}
 \usage{
 plot_freq(
-  x,
-  group = NULL,
+  formula,
+  data = NULL,
   freq = TRUE,
   col = "dodgerblue",
   lwd = 9,
   width = NULL,
   value.labels = TRUE,
   add = FALSE,
-  data = NULL,
   show.legend = TRUE,
   legend.title = NULL,
   col.text = NULL,
@@ -21,9 +20,12 @@ plot_freq(
 )
 }
 \arguments{
-\item{x}{A numeric vector of values to plot frequencies for, or a column name (character string) if \code{data} is provided.}
+\item{formula}{A formula of the form \code{x ~ group} where \code{x} is the
+variable to plot frequencies for and \code{group} is an optional grouping variable
+(with 2 or 3 unique values). For single variable (no grouping), use \code{x ~ 1}.}
 
-\item{group}{A grouping variable (with 2 or 3 unique values). If specified, frequencies are computed separately for each group and plotted with different colors. Can be a vector or a column name (character string) if \code{data} is provided.}
+\item{data}{An optional data frame containing the variables in the formula.
+If \code{data} is not provided, variables are evaluated from the calling environment.}
 
 \item{freq}{Logical. If TRUE (default), displays frequencies. If FALSE, displays percentages.}
 
@@ -36,8 +38,6 @@ plot_freq(
 \item{value.labels}{Logical. If TRUE, displays frequencies on top of each line.}
 
 \item{add}{Logical. If TRUE, adds to an existing plot instead of creating a new one.}
-
-\item{data}{Optional data frame containing the variables \code{x} and optionally \code{group}.}
 
 \item{show.legend}{Logical. If TRUE (default), displays a legend when \code{group} is specified. If FALSE, no legend is shown.}
 
@@ -74,7 +74,7 @@ plot_freq(x + 1, col = "red", add = TRUE)
 
 # Using a data frame
 df <- data.frame(value = c(1, 1, 2, 2, 2, 5, 5), group = c("A", "A", "A", "B", "B", "A", "B"))
-plot_freq(x = "value", data = df)
-plot_freq(x = value, group = group, data = df)  # unquoted column names also work
+plot_freq(value ~ 1, data = df)  # single variable
+plot_freq(value ~ group, data = df)  # with grouping
 
 }

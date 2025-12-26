@@ -51,8 +51,15 @@ validate_plot <- function(y, group = NULL, data = NULL, func_name = "plot", requ
     y_var_name <- formula_vars[1]
     group_var_name <- if (length(formula_vars) >= 2) formula_vars[2] else NULL
     
-    # Get calling environment for evaluating variables
-    calling_env <- parent.frame()
+    # Get environment for evaluating variables
+    # Use the formula's environment if available (where the formula was created),
+    # otherwise fall back to parent.frame() (the calling function's environment)
+    formula_env <- environment(y)
+    if (is.null(formula_env)) {
+      calling_env <- parent.frame()
+    } else {
+      calling_env <- formula_env
+    }
     
     if (!is.null(data)) {
       # Data provided: extract from data frame
@@ -104,8 +111,17 @@ validate_plot <- function(y, group = NULL, data = NULL, func_name = "plot", requ
     group_name_raw <- group_var_name
   } else {
     # Standard syntax: y, group
+    # Use match.call() to capture the actual expressions passed, not parameter names
+    mc <- match.call()
+    y_expr <- mc$y
+    group_expr <- mc$group
+    
     # Capture y name for xlab (before potentially overwriting y)
-    y_name_raw <- deparse(substitute(y))
+    if (!is.null(y_expr)) {
+      y_name_raw <- deparse(y_expr)
+    } else {
+      y_name_raw <- deparse(substitute(y))
+    }
     # Remove quotes if present (handles both y = "col" and y = col)
     y_name_raw <- gsub('^"|"$', '', y_name_raw)
     y_name <- if (grepl("\\$", y_name_raw)) {
@@ -115,7 +131,6 @@ validate_plot <- function(y, group = NULL, data = NULL, func_name = "plot", requ
     }
     
     # Capture group name for legend title (before potentially overwriting group)
-    group_expr <- substitute(group)
     if (!is.null(group_expr)) {
       group_name_raw <- deparse(group_expr)
       # Remove quotes if present (handles both group = "col" and group = col)

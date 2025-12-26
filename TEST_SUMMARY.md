@@ -55,8 +55,8 @@ Tests for the `message2()` colored message function.
 - **Multiple parts**: Tests combining multiple message components
 - **Return value**: Verifies function returns invisibly
 
-### 7. test-namedList.R
-Tests for the `namedList()` function that creates named lists.
+### 7. test-list2.R
+Tests for the `list2()` function that creates named lists.
 - **Automatic naming**: Tests automatic naming from object names
 - **Explicit names**: Tests when names are explicitly provided
 - **Mixed naming**: Tests combination of named and unnamed objects
@@ -210,5 +210,6 @@ testthat::test_file("tests/testthat/test-format_pvalue.R")
 - Plotting tests verify return values rather than visual output
 - Some tests expect warnings (e.g., message2 appendLF parameter)
 - Tests are designed to run automatically during `R CMD check`
+
 
 

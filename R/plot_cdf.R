@@ -4,16 +4,10 @@
 #' each unique value of a grouping variable, with support for vectorized
 #' plotting parameters.
 #'
-#' @param y A numeric vector of values to compute ECDFs for, a column name
-#'   (character string or unquoted) if \code{data} is provided, or a formula
-#'   of the form \code{y ~ group} where \code{y} is the response variable and
-#'   \code{group} is the grouping variable.
-#' @param group A vector (factor, character, or numeric) used to group the data,
-#'   or a column name (character string or unquoted) if \code{data} is provided.
-#'   Ignored if \code{y} is a formula.
-#' @param data An optional data frame containing the variables \code{y} and \code{group}.
-#'   If \code{y} is a formula and \code{data} is not provided, variables are
-#'   evaluated from the calling environment.
+#' @param formula A formula of the form \code{y ~ group} where \code{y} is the
+#'   response variable and \code{group} is the grouping variable.
+#' @param data An optional data frame containing the variables in the formula.
+#'   If \code{data} is not provided, variables are evaluated from the calling environment.
 #' @param show.ks Logical. If TRUE (default), shows Kolmogorov-Smirnov test results
 #'   when there are exactly 2 groups. If FALSE, KS test results are not displayed.
 #' @param show.quantiles Logical. If TRUE (default), shows horizontal lines and results
@@ -41,11 +35,11 @@
 #' @details
 #' This function:
 #' \itemize{
-#'   \item Splits \code{y} by unique values of \code{group}
+#'   \item Splits the response variable by unique values of the grouping variable
 #'   \item Computes an ECDF for each group
 #'   \item Plots all ECDFs on the same graph
 #'   \item Handles plotting parameters: scalars apply to all groups, vectors
-#'     apply element-wise to groups (in order of unique \code{group} values)
+#'     apply element-wise to groups (in order of unique grouping variable values)
 #' }
 #'
 #' The ECDFs are plotted as step functions with vertical lines. Parameters like
@@ -72,30 +66,25 @@
 #' }
 #'
 #' @examples
-#' # Basic usage
+#' # Basic usage with formula syntax
 #' y <- rnorm(100)
 #' group <- rep(c("A", "B", "C"), c(30, 40, 30))
-#' plot_cdf(y, group)
+#' plot_cdf(y ~ group)
 #'
 #' # With custom colors (scalar - same for all)
-#' plot_cdf(y, group, col = "blue")
+#' plot_cdf(y ~ group, col = "blue")
 #'
 #' # With custom colors (vector - different for each group)
-#' plot_cdf(y, group, col = c("red", "green", "blue"))
+#' plot_cdf(y ~ group, col = c("red", "green", "blue"))
 #'
 #' # Multiple parameters
-#' plot_cdf(y, group, col = c("red", "green", "blue"), lwd = c(1, 2, 3))
+#' plot_cdf(y ~ group, col = c("red", "green", "blue"), lwd = c(1, 2, 3))
 #'
 #' # With line type and point character
-#' plot_cdf(y, group, col = c("red", "green", "blue"), lty = c(1, 2, 3), lwd = 2)
+#' plot_cdf(y ~ group, col = c("red", "green", "blue"), lty = c(1, 2, 3), lwd = 2)
 #'
 #' # Using data frame
 #' df <- data.frame(value = rnorm(100), group = rep(c("A", "B"), 50))
-#' plot_cdf(value, group, data = df)
-#' plot_cdf("value", "group", data = df)  # quoted column names also work
-#' plot_cdf(value, group, data = df, col = c("red", "blue"))
-#'
-#' # Using formula syntax
 #' plot_cdf(value ~ group, data = df)
 #' plot_cdf(value ~ group, data = df, col = c("red", "blue"))
 #' 
@@ -105,7 +94,7 @@
 #' plot_cdf(widgetness ~ gender)
 #'
 #' @export
-plot_cdf <- function(y, group, data = NULL, show.ks = TRUE, show.quantiles = TRUE, ...) {
+plot_cdf <- function(formula, data = NULL, show.ks = TRUE, show.quantiles = TRUE, ...) {
   # Extract plotting parameters from ...
     dots <- list(...)
     
@@ -114,8 +103,8 @@ plot_cdf <- function(y, group, data = NULL, show.ks = TRUE, show.quantiles = TRU
     dots$show.quantiles <- NULL
   
   # Validate inputs using validation function shared with plot_density, plot_cdf, plot_freq
-  # Let validate_plot handle all extraction from data frames (like plot_density does)
-  validated <- validate_plot(y, group, data, func_name = "plot_cdf", require_group = TRUE)
+  # Only formula syntax is supported
+  validated <- validate_plot(formula, NULL, data, func_name = "plot_cdf", require_group = TRUE)
   y <- validated$y
   group <- validated$group
   y_name <- validated$y_name
@@ -227,6 +216,17 @@ plot_cdf <- function(y, group, data = NULL, show.ks = TRUE, show.quantiles = TRU
         default_ylim <- dots$ylim
       }
     
+    # Ensure adequate top margin for main title and legend
+    old_mar <- par("mar")
+    if (!"mar" %in% names(dots)) {
+      # Increase top margin if it's too small (less than 3 lines to accommodate title and legend)
+      if (old_mar[3] < 3) {
+        par(mar = c(old_mar[1], old_mar[2], 3, old_mar[4]))
+        # Restore original margins on exit
+        on.exit(par(mar = old_mar), add = TRUE)
+      }
+    }
+    
     # Remove vectorized parameters and data from dots for plot()
     # Also remove xlab, ylab, main since we handle them separately
     plot_dots <- dots
@@ -276,13 +276,22 @@ plot_cdf <- function(y, group, data = NULL, show.ks = TRUE, show.quantiles = TRU
       }
     }
     
-    # Add legend on top with title showing x variable name
+    # Add legend on top
     legend_cols <- sapply(1:length(ecdf_list), function(i) get_param("col", i) %||% default_colors[i])
     legend_lwds <- sapply(1:length(ecdf_list), function(i) get_param("lwd", i) %||% 4)
     legend_ltys <- sapply(1:length(ecdf_list), function(i) get_param("lty", i) %||% 1)
-    legend("top", legend = as.character(unique_x), 
+    
+    # Calculate sample sizes for each group and add to legend labels
+    group_ns <- sapply(1:length(ecdf_list), function(i) {
+      length(y[group == unique_x[i]])
+    })
+    
+    # Create legend labels with sample sizes (newline before sample size, lowercase n)
+    legend_labels <- paste0(as.character(unique_x), "\n(n=", group_ns, ")")
+    
+    legend("top", legend = legend_labels, 
            col = legend_cols, lwd = legend_lwds, lty = legend_ltys,
-           horiz = TRUE, bty = "n", title = group_name)
+           horiz = TRUE, bty = "n")
     
     # If exactly 2 groups, perform KS test and quantile regression tests
       if (n_groups == 2) {

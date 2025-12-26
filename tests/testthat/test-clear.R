@@ -27,3 +27,4 @@ test_that("clear returns invisibly", {
 # The function is tested for basic functionality and error handling
 
 
+

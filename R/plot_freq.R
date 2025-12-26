@@ -3,15 +3,17 @@
 #' Creates a frequency plot showing the frequency of every observed value,
 #' displaying the full range from minimum to maximum value.
 #'
-#' @param x A numeric vector of values to plot frequencies for, or a column name (character string) if \code{data} is provided.
-#' @param group A grouping variable (with 2 or 3 unique values). If specified, frequencies are computed separately for each group and plotted with different colors. Can be a vector or a column name (character string) if \code{data} is provided.
+#' @param formula A formula of the form \code{x ~ group} where \code{x} is the
+#'   variable to plot frequencies for and \code{group} is an optional grouping variable
+#'   (with 2 or 3 unique values). For single variable (no grouping), use \code{x ~ 1}.
 #' @param freq Logical. If TRUE (default), displays frequencies. If FALSE, displays percentages.
 #' @param col Color for the bars. 
 #' @param lwd Line width for the frequency bars. Default is 9.
 #' @param width Numeric. Width of the frequency bars. If NULL (default), width is automatically calculated based on the spacing between values.
 #' @param value.labels Logical. If TRUE, displays frequencies on top of each line. 
 #' @param add Logical. If TRUE, adds to an existing plot instead of creating a new one. 
-#' @param data Optional data frame containing the variables \code{x} and optionally \code{group}.
+#' @param data An optional data frame containing the variables in the formula.
+#'   If \code{data} is not provided, variables are evaluated from the calling environment.
 #' @param show.legend Logical. If TRUE (default), displays a legend when \code{group} is specified. If FALSE, no legend is shown.
 #' @param legend.title Character string. Title for the legend when \code{group} is specified. If NULL (default), no title is shown.
 #' @param col.text Color for the value labels. If not specified, uses \code{col} for non-grouped plots or group colors for grouped plots.
@@ -39,64 +41,46 @@
 #'
 #' # Using a data frame
 #' df <- data.frame(value = c(1, 1, 2, 2, 2, 5, 5), group = c("A", "A", "A", "B", "B", "A", "B"))
-#' plot_freq(x = "value", data = df)
-#' plot_freq(x = value, group = group, data = df)  # unquoted column names also work
+#' plot_freq(value ~ 1, data = df)  # single variable
+#' plot_freq(value ~ group, data = df)  # with grouping
 #'
 
 #' @export
-plot_freq <- function(x, group=NULL, freq=TRUE, col='dodgerblue', lwd=9, width=NULL, value.labels=TRUE, add=FALSE, data=NULL, show.legend=TRUE, legend.title=NULL, col.text=NULL, ...) {
-  # Handle group expressions (like c(1,2,3)) separately before validation
-  group_expr <- substitute(group)
-  group_was_provided <- !is.null(group_expr)
-  group_is_expression <- FALSE
-  
-  # Check if group is an expression (not a simple column name)
-  if (group_was_provided && !is.null(data)) {
-    group_name_raw_temp <- if (is.character(group_expr) && length(group_expr) == 1) {
-      group_expr
-    } else {
-      deparse(group_expr)
-    }
-    group_name_raw_temp <- gsub('^"|"$', '', group_name_raw_temp)
-    
-    # If it contains operators/parentheses, it's likely an expression
-    if (grepl("[()\\[\\]\\+\\-\\*/]", group_name_raw_temp)) {
-      group_is_expression <- TRUE
-      # Evaluate the expression
-      tryCatch({
-        group <- eval(group_expr, envir = parent.frame())
-      }, error = function(e) {
-        stop(sprintf("plot_freq(): Could not evaluate 'group' expression '%s'", group_name_raw_temp), call. = FALSE)
-      })
-    }
-  }
-  
+plot_freq <- function(formula, data=NULL, freq=TRUE, col='dodgerblue', lwd=9, width=NULL, value.labels=TRUE, add=FALSE, show.legend=TRUE, legend.title=NULL, col.text=NULL, ...) {
   # Extract additional arguments
   dots <- list(...)
   
-  # Validate inputs using validation function shared with plot_density, plot_cdf, plot_freq (only if group is not an expression)
-  if (!group_is_expression) {
-    validated <- validate_plot(x, group, data, func_name = "plot_freq", require_group = FALSE)
-    x <- validated$y  # Note: validate_plot uses 'y' but we pass 'x'
-    group <- validated$group
-    x_name <- validated$y_name
-    group_name <- validated$group_name
-    x_name_raw <- validated$y_name_raw
-    group_name_raw <- validated$group_name_raw
-  } else {
-    # Group was an expression, validate x separately
-    validated <- validate_plot(x, NULL, data, func_name = "plot_freq", require_group = FALSE)
-    x <- validated$y
-    x_name <- validated$y_name
-    x_name_raw <- validated$y_name_raw
-    # For group expressions, we need to capture the name differently
-    group_name_raw <- if (is.character(group_expr) && length(group_expr) == 1) {
-      group_expr
-    } else {
-      deparse(group_expr)
+  # Check if formula is actually a formula or a vector
+  # If it's not a formula, capture the variable name before calling validate_plot
+  is_formula_input <- tryCatch(inherits(formula, "formula"), error = function(e) FALSE)
+  if (!is_formula_input) {
+    # Capture the original variable name from the calling environment
+    formula_expr <- substitute(formula)
+    original_x_name <- deparse(formula_expr)
+    # Remove quotes if present
+    original_x_name <- gsub('^"|"$', '', original_x_name)
+    # Clean up the name (remove $ prefixes if present)
+    if (grepl("\\$", original_x_name)) {
+      original_x_name <- strsplit(original_x_name, "\\$")[[1]][length(strsplit(original_x_name, "\\$")[[1]])]
     }
-    group_name_raw <- gsub('^"|"$', '', group_name_raw)
-    group_name <- group_name_raw
+  } else {
+    original_x_name <- NULL
+  }
+  
+  # Validate inputs using validation function shared with plot_density, plot_cdf, plot_freq
+  # Only formula syntax is supported (x ~ group or x ~ 1 for single variable)
+  validated <- validate_plot(formula, NULL, data, func_name = "plot_freq", require_group = FALSE)
+  x <- validated$y  # Note: validate_plot uses 'y' but we use 'x'
+  group <- validated$group
+  x_name <- validated$y_name
+  group_name <- validated$group_name
+  x_name_raw <- validated$y_name_raw
+  group_name_raw <- validated$group_name_raw
+  
+  # Fix x_name if it shows "formula" (happens when non-formula input is passed)
+  if (!is.null(original_x_name) && x_name == "formula") {
+    x_name <- original_x_name
+    x_name_raw <- original_x_name
   }
   
   # Handle 'group' grouping if specified
@@ -212,13 +196,28 @@ plot_freq <- function(x, group=NULL, freq=TRUE, col='dodgerblue', lwd=9, width=N
       user_provided_xaxt <- "xaxt" %in% names(dots)
       if (!user_provided_xaxt) dots$xaxt <- "n"
       
+      # Ensure adequate top margin for main title and (N=...) text
+      old_mar <- par("mar")
+      if (!"mar" %in% names(dots)) {
+        # Increase top margin if it's too small (less than 5 lines to accommodate title and N)
+        if (old_mar[3] < 5) {
+          par(mar = c(old_mar[1], old_mar[2], 5, old_mar[4]))
+        }
+      }
+      
       # Plot the frequencies (empty plot frame)
       plot_args <- c(list(x = all_xs, y = rep(0, length(all_xs))), dots)
       do.call(plot, plot_args)
       
-      # Calculate total sample size and add it under the main title
+      # Calculate total sample size and add it below the main title
+      # Main title is typically at line 3, so position (N=...) at line 0.5 (close to plot, clearly below title)
       tot <- length(x)
-      mtext(paste0("(N=", tot, ")"), side = 3, line = 0.35, font = 3)
+      mtext(paste0("(N=", tot, ")"), side = 3, line = 0.5, font = 3, cex = 0.9)
+      
+      # Restore original margins if we changed them
+      if (!"mar" %in% names(dots) && old_mar[3] < 5) {
+        par(mar = old_mar)
+      }
       
       # Draw custom x-axis with all x values (if we suppressed default)
       if (!user_provided_xaxt) {
@@ -445,15 +444,29 @@ plot_freq <- function(x, group=NULL, freq=TRUE, col='dodgerblue', lwd=9, width=N
             if (!user_provided_xaxt) dots$xaxt <- "n"
     #########################################################
     
+      # Ensure adequate top margin for main title and (N=...) text
+      old_mar <- par("mar")
+      if (!"mar" %in% names(dots)) {
+        # Increase top margin if it's too small (less than 5 lines to accommodate title and N)
+        if (old_mar[3] < 5) {
+          par(mar = c(old_mar[1], old_mar[2], 5, old_mar[4]))
+        }
+      }
               
                   
     # Plot the frequencies (empty plot frame)
         plot_args <- c(list(x = xs, y = fs), dots)
         do.call(plot, plot_args)
       
-    # Calculate total sample size and add it under the main title
+    # Calculate total sample size and add it below the main title
+    # Main title is typically at line 3, so position (N=...) at line 1 (below title, above plot)
         tot <- total  # Use the original total (before percentage conversion)
-        mtext(paste0("(N=", tot, ")"), side = 3, line = 0.35, font = 3)
+        mtext(paste0("(N=", tot, ")"), side = 3, line = 1, font = 3, cex = 0.9)
+      
+      # Restore original margins if we changed them
+      if (!"mar" %in% names(dots) && old_mar[3] < 5) {
+        par(mar = old_mar)
+      }
         
     # Draw custom x-axis with all x values (if we suppressed default)
       if (!user_provided_xaxt) {

@@ -243,13 +243,13 @@ message2("This is a cyan message", col = "cyan")
 ### 🗂️ Data Management
 
 <details>
-<summary><code>namedList()</code>: Create lists with objects without having to name them</summary>
+<summary><code>list2()</code>: Create lists with objects without having to name them</summary>
 
 ```r
 	x <- 1:5
 	y <- letters[1:3]
 	z <- matrix(1:4, nrow = 2)
-	namedList(x, y, z)
+	list2(x, y, z)
 ```
 </details>
 

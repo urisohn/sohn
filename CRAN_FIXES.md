@@ -74,3 +74,4 @@ The following are NOTES (not errors) and are acceptable for CRAN:
 - `man/text2.Rd` - Fixed markup braces
 
 
+
