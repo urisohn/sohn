@@ -114,6 +114,7 @@ plot_cdf <- function(y, group, data = NULL, show.ks = TRUE, show.quantiles = TRU
     dots$show.quantiles <- NULL
   
   # Validate inputs using validation function shared with plot_density, plot_cdf, plot_freq
+  # Let validate_plot handle all extraction from data frames (like plot_density does)
   validated <- validate_plot(y, group, data, func_name = "plot_cdf", require_group = TRUE)
   y <- validated$y
   group <- validated$group

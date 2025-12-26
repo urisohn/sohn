@@ -29,6 +29,7 @@
 #' cat('this will not')
 #' }
 #'
+#' @importFrom grDevices col2rgb
 #' @export
 message2 <- function(..., col = "cyan", font = 1, domain = NULL, appendLF = TRUE, 
                      quiet = FALSE, stop = FALSE) {

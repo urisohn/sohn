@@ -232,11 +232,11 @@ format_pvalue(0.0001, include_p = TRUE)
 </details>
 
 <details>
-<summary><code>message.col()</code>: Print colored messages to console</summary>
+<summary><code>message2()</code>: Print colored messages to console</summary>
 
 ```r
-message.col("This is a red message", col = "red", font = 2)
-message.col("This is a cyan message", col = "cyan")
+message2("This is a red message", col = "red", font = 2)
+message2("This is a cyan message", col = "cyan")
 ```
 </details>
 

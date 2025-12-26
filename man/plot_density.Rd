@@ -22,9 +22,8 @@ and mean labels. If FALSE, none of these are displayed.}
 (applied to all groups) or vectors (applied element-wise to each group).
 Common parameters include \code{col}, \code{lwd}, \code{lty}, \code{pch},
 \code{type}, etc. Arguments can also be passed to \code{density()} such as
-\code{bw}, \code{kernel}, etc.}
-
-\item{show.means}{Logical. If TRUE (default), shows vertical segments at mean values
+\code{bw}, \code{kernel}, etc. Additionally, \code{show.means} can be passed
+as a logical value (default TRUE) to show vertical segments at mean values
 for 2-3 groups. For 2 groups, low mean uses pos=2 and high mean uses pos=4.
 For 3 groups, mid mean uses pos=3. For 4+ groups, vertical segments are not shown.}
 }

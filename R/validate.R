@@ -29,7 +29,8 @@ validate_plot <- function(y, group = NULL, data = NULL, func_name = "plot", requ
   data_name <- gsub('^"|"$', '', data_name)
   
   # Check if y is a formula
-  is_formula <- inherits(y, "formula")
+  # Use tryCatch to avoid "object not found" error if y is a symbol in data
+  is_formula <- tryCatch(inherits(y, "formula"), error = function(e) FALSE)
   
   if (is_formula) {
     # Formula syntax: y ~ group
