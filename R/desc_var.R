@@ -63,6 +63,15 @@
 #' @export
 desc_var <- function(y, group = NULL, data = NULL, decimals = 3) {
   
+  # FUNCTION OUTLINE:
+  # 1. Check if y is a formula and extract variables (formula vs non-formula syntax)
+  # 2. Validate inputs (numeric check, length checks, perfect overlap check)
+  # 3. Define helper function to compute statistics for a vector
+  # 4. Compute statistics (either for full dataset or by group)
+  # 5. Round numeric columns to specified decimal places
+  # 6. Add descriptive labels to columns using labelled package
+  # 7. Return result dataframe
+  
   # Helper function to format error messages with conditional newline
   format_msg <- function(msg) {
     total_length <- nchar(msg) + nchar("desc_var() says: ")
@@ -223,8 +232,7 @@ desc_var <- function(y, group = NULL, data = NULL, decimals = 3) {
     use_separate_group_cols <- FALSE
   }
   
-  # 2. Validations
-  
+  # 2. Validate inputs
   # 2.1. Validate that y is numeric
   if (!is.numeric(y)) {
     message2(format_msg(sprintf("The dv is numeric: '%s' is not numeric", y_name)), col = 'red', stop = TRUE)
@@ -252,7 +260,7 @@ desc_var <- function(y, group = NULL, data = NULL, decimals = 3) {
     
     
   
-  # 3. Helper function to compute statistics for a vector
+  # 3. Define helper function to compute statistics for a vector
   compute_stats <- function(x) {
     na_count <- sum(is.na(x))
     x <- x[!is.na(x)]  # Remove NAs
@@ -347,7 +355,7 @@ desc_var <- function(y, group = NULL, data = NULL, decimals = 3) {
       result_df$mode2 <- stats$mode2
       result_df$freq_mode2 <- stats$freq_mode2
     } else {
-      message2(format_msg("Note: mode not reported because all values are unique"))
+      message2(format_msg("mode not reported because all values are unique"))
     }
   } else {
     # Grouping: compute for each group
@@ -359,6 +367,22 @@ desc_var <- function(y, group = NULL, data = NULL, decimals = 3) {
       # Create a data frame to get unique combinations efficiently
       group_df <- as.data.frame(group_list, stringsAsFactors = FALSE)
       unique_combos <- unique(group_df)
+      
+      # Check for missing combinations (combinations that don't exist in data)
+      all_possible_combos <- expand.grid(lapply(group_list, function(x) sort(unique(x))), stringsAsFactors = FALSE)
+      all_possible_str <- do.call(paste, c(all_possible_combos, sep = "|"))
+      unique_combos_str <- do.call(paste, c(unique_combos, sep = "|"))
+      missing_indices <- which(!all_possible_str %in% unique_combos_str)
+      
+      if (length(missing_indices) > 0) {
+        missing_combos_df <- all_possible_combos[missing_indices, , drop = FALSE]
+        # Format missing combinations as readable strings
+        missing_str <- apply(missing_combos_df, 1, function(row) {
+          paste(paste(names(missing_combos_df), row, sep = "="), collapse = ", ")
+        })
+        missing_list <- paste(missing_str, collapse = "\n")
+        message2(format_msg(sprintf("Some possible group combinations are not observed:\n%s", missing_list)), col = 'blue')
+      }
       
       # First pass: check if any group has mode stats
       for (i in seq_len(nrow(unique_combos))) {
@@ -455,59 +479,69 @@ desc_var <- function(y, group = NULL, data = NULL, decimals = 3) {
     
     result_df <- do.call(rbind, result_list)
     
-    # Sort by grouping variables
-    if (use_separate_group_cols && !is.null(group_list)) {
-      # Sort by all grouping variables in order
-      sort_cols <- names(group_list)
-      result_df <- result_df[do.call(order, result_df[sort_cols]), , drop = FALSE]
-    } else if (!is.null(group)) {
-      # Sort by single group column
-      result_df <- result_df[order(result_df$group), , drop = FALSE]
-    }
-    
-    # Show message if no group has mode stats
-    if (!has_mode_stats) {
-      message2(format_msg("Note: mode not reported because all values are unique"))
-    }
-  }
-  
-  # 5. Round numeric columns (except n, NA_total, freq_mode, and freq_mode2, which are integers) to specified decimals
-  numeric_cols <- c("mean", "sd", "se", "median", "mode", "mode2", "min", "max")
-  numeric_cols <- numeric_cols[numeric_cols %in% names(result_df)]
-  result_df[numeric_cols] <- lapply(result_df[numeric_cols], round, digits = decimals)
-  
-  # 6. Add descriptive labels to columns using labelled package
-  label_list <- list(
-    group = "Group identifier",
-    n = "Number of observations",
-    mean = "Mean",
-    sd = "Standard deviation",
-    se = "Standard error",
-    median = "Median (50th percentile)",
-    NA_total = "Number of observations with missing values (NA)",
-    mode = "Most frequent value",
-    freq_mode = "Frequency of mode",
-    mode2 = "2nd most frequent value",
-    freq_mode2 = "Frequency of 2nd mode",
-    min = "Minimum value",
-    max = "Maximum value"
-  )
-  
-  # Add labels for individual grouping variable columns if they exist
-  if (use_separate_group_cols && !is.null(group_list)) {
-    for (gv in names(group_list)) {
-      if (gv %in% names(result_df)) {
-        label_list[[gv]] <- paste("Grouping variable:", gv)
+    # Check if any group has 0 observations
+    if (any(result_df$n == 0)) {
+      zero_groups <- sum(result_df$n == 0)
+      if (zero_groups == 1) {
+        message2(format_msg("1 group has 0 observations"))
+      } else {
+        message2(format_msg(sprintf("%d groups have 0 observations", zero_groups)))
       }
     }
+    
+    # Sort by grouping variables
+      if (use_separate_group_cols && !is.null(group_list)) {
+        # Sort by all grouping variables in order
+        sort_cols <- names(group_list)
+        result_df <- result_df[do.call(order, result_df[sort_cols]), , drop = FALSE]
+      } else if (!is.null(group)) {
+        # Sort by single group column
+        result_df <- result_df[order(result_df$group), , drop = FALSE]
+      }
+      
+    # Show message if no group has mode stats
+      if (!has_mode_stats) {
+        message2(format_msg("mode not reported because all values are unique"))
+      }
   }
+  
+  # 5. Round numeric columns to specified decimal places
+    numeric_cols <- c("mean", "sd", "se", "median", "mode", "mode2", "min", "max")
+    numeric_cols <- numeric_cols[numeric_cols %in% names(result_df)]
+    result_df[numeric_cols] <- lapply(result_df[numeric_cols], round, digits = decimals)
+    
+  # 6. Add descriptive labels to columns using labelled package
+    label_list <- list(
+      group = "Group identifier",
+      n = "Number of observations",
+      mean = "Mean",
+      sd = "Standard deviation",
+      se = "Standard error",
+      median = "Median (50th percentile)",
+      NA_total = "Number of observations with missing values (NA)",
+      mode = "Most frequent value",
+      freq_mode = "Frequency of mode",
+      mode2 = "2nd most frequent value",
+      freq_mode2 = "Frequency of 2nd mode",
+      min = "Minimum value",
+      max = "Maximum value"
+    )
+  
+  # Add labels for individual grouping variable columns if they exist
+    if (use_separate_group_cols && !is.null(group_list)) {
+      for (gv in names(group_list)) {
+        if (gv %in% names(result_df)) {
+          label_list[[gv]] <- paste("Grouping variable:", gv)
+        }
+      }
+    }
   
   # Only include labels for columns that exist
   labelled::var_label(result_df) <- label_list[names(result_df)]
   
   rownames(result_df) <- NULL
   
-  # 7. Return result dataframe (will print if called directly, won't print if assigned)
+  # 7. Return result dataframe
   return(result_df)
 }
 
