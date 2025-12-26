@@ -2,7 +2,7 @@
 % Please edit documentation in R/message2.R
 \name{message2}
 \alias{message2}
-\title{Colored Message Function}
+\title{Improves message() by adding color, font weight, and ability to stop execution}
 \usage{
 message2(
   ...,
@@ -17,10 +17,13 @@ message2(
 \arguments{
 \item{...}{One or more R objects that can be coerced to character and pasted together.}
 
-\item{col}{Character string specifying the color. Can be any color name (e.g., "cyan", 
-"red", "blue", "dodgerblue", etc.). Default is "cyan". For ANSI terminal colors, 
-standard colors (black, red, green, yellow, blue, magenta, cyan, white) will be used 
-directly; other colors will default to "cyan".}
+\item{col}{Character string specifying the color. Can be any R color name (e.g., "dodgerblue", 
+"red4", "red1"). Default is "cyan". 
+Supports ALL named R colors by converting them to RGB. If the terminal supports 256-color 
+mode, colors are mapped directly to 256-color ANSI codes (allowing distinct colors like 
+red1 vs red4). Otherwise, colors are mapped to the closest of 16 ANSI colors (black, red, 
+green, yellow, blue, magenta, cyan, white, with both standard and bright variants). 
+If conversion fails, defaults to "cyan".}
 
 \item{font}{Integer. 1 for plain text (default), 2 for bold text.}
 
@@ -33,7 +36,7 @@ directly; other colors will default to "cyan".}
 \item{stop}{Logical. If TRUE, stops execution (like \code{stop()}) but without printing "Error:".}
 }
 \description{
-Prints a colored message with optional bold formatting.
+Improves message() by adding color, font weight, and ability to stop execution
 }
 \details{
 This function prints colored messages to the console. If ANSI color codes are supported
@@ -45,8 +48,9 @@ message2("This is a plain cyan message", col = "cyan", font = 1)
 message2("This is a bold cyan message", col = "cyan", font = 2)
 message2("This is a bold red message", col = "red", font = 2)
 \dontrun{
+cat('this will be shown')
 message2("This stops execution", stop = TRUE)
+cat('this will not')
 }
 
 }
-

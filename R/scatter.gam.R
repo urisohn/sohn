@@ -67,8 +67,22 @@
 scatter.gam <- function(x, y, data.dots = TRUE, three.dots = FALSE, data = NULL, k = NULL, plot.dist = NULL, 
                         dot.pch = 16, dot.col = adjustcolor('gray', 0.7), jitter = FALSE, ...) {
   # Capture x and y names for labels (before potentially overwriting)
-  x_name <- deparse(substitute(x))
-  y_name <- deparse(substitute(y))
+  x_name_raw <- deparse(substitute(x))
+  y_name_raw <- deparse(substitute(y))
+  # Remove quotes if present
+  x_name_raw <- gsub('^"|"$', '', x_name_raw)
+  y_name_raw <- gsub('^"|"$', '', y_name_raw)
+  # Clean variable names: remove df$ prefix if present
+  x_name <- if (grepl("\\$", x_name_raw)) {
+    strsplit(x_name_raw, "\\$")[[1]][length(strsplit(x_name_raw, "\\$")[[1]])]
+  } else {
+    x_name_raw
+  }
+  y_name <- if (grepl("\\$", y_name_raw)) {
+    strsplit(y_name_raw, "\\$")[[1]][length(strsplit(y_name_raw, "\\$")[[1]])]
+  } else {
+    y_name_raw
+  }
   
   # Extract additional arguments
   dots <- list(...)
@@ -86,15 +100,16 @@ scatter.gam <- function(x, y, data.dots = TRUE, three.dots = FALSE, data = NULL,
     }
     
     # Extract columns from data frame
-    if (!x_name %in% names(data)) {
-      stop(sprintf("Column '%s' not found in data", x_name))
+    # Use raw names for column lookup (they may include df$ prefix)
+    if (!x_name_raw %in% names(data)) {
+      stop(sprintf("Column '%s' not found in data", x_name_raw))
     }
-    if (!y_name %in% names(data)) {
-      stop(sprintf("Column '%s' not found in data", y_name))
+    if (!y_name_raw %in% names(data)) {
+      stop(sprintf("Column '%s' not found in data", y_name_raw))
     }
     
-    x <- data[[x_name]]
-    y <- data[[y_name]]
+    x <- data[[x_name_raw]]
+    y <- data[[y_name_raw]]
   }
   
   # Check for required package
@@ -288,7 +303,7 @@ scatter.gam <- function(x, y, data.dots = TRUE, three.dots = FALSE, data = NULL,
     # plot_freq() and hist() have their own defaults, so we only override what's necessary
     dist_plot_args <- list(
       xlab = x_name,
-      ylab = "Frequency",
+      ylab = "",  # Will use mtext instead
       main = "",
       xlim = xlim_dist
     )
@@ -316,7 +331,7 @@ scatter.gam <- function(x, y, data.dots = TRUE, three.dots = FALSE, data = NULL,
       init_bottom_plot(xlim = xlim_dist,
                        ylim = ylim_freq,
                        xlab = x_name,
-                       ylab = "Frequency",
+                       ylab = "",  # Will use mtext instead
                        bg = "gray95",
                        cex.lab = cex_lab)
       
@@ -331,10 +346,20 @@ scatter.gam <- function(x, y, data.dots = TRUE, three.dots = FALSE, data = NULL,
       
       # Draw axes after plot_freq (since add=TRUE doesn't draw axes)
       axis(1)  # x-axis
-      axis(2, las = 1)  # y-axis
+      axis(4, las = 1)  # y-axis on right side to avoid conflict with GAM plot
+      
+      # Add Frequency label on left side next to the plot
+      mtext(side = 2, text = "Frequency", line = 0.5, font = 2, cex = cex_lab)
     } else if (use_hist) {
       # Use hist() for distribution plot of x
-      do.call(hist, c(list(x = x), dist_plot_args))
+      # Suppress left y-axis and add right y-axis
+      hist_args <- c(list(x = x, yaxt = "n"), dist_plot_args)
+      do.call(hist, hist_args)
+      axis(4, las = 1)  # y-axis on right side to avoid conflict with GAM plot
+      
+      # Add Frequency label on left side next to the plot
+      cex_lab <- if ("cex.lab" %in% names(plot_args)) plot_args$cex.lab else 1.2
+      mtext(side = 2, text = "Frequency", line = 0.5, font = 2, cex = cex_lab)
     }
   }
   

@@ -351,8 +351,12 @@ plot_gam <- function(model, predictor, quantile.others = 50,
     if (use_plot_freq) {
       # For plot_freq, determine ylim from frequencies
       freq_table <- table(predictor_data)
-      max_freq <- max(freq_table)
-      ylim_dist <- c(0, max_freq * 1.20)  # Add 20% space at top (15% + 5% buffer)
+      max_freq <- max(freq_table, na.rm = TRUE)
+      ylim_dist <- c(0, max_freq)
+      # Add extra space at top if value labels might be shown (plot_freq default behavior)
+      if (max_freq > 0) {
+        ylim_dist[2] <- max_freq + max(1, max_freq * 0.15)  # Add 15% or at least 1 unit
+      }
       
       # Get ylab cex from GAM plot to match size
       ylab_cex <- if ("cex.lab" %in% names(dots)) dots$cex.lab else 1.2
@@ -361,7 +365,7 @@ plot_gam <- function(model, predictor, quantile.others = 50,
       init_bottom_plot(xlim = xlim_dist, 
                        ylim = ylim_dist,
                        xlab = predictor, 
-                       ylab = "Freq.",
+                       ylab = "",  # Will use mtext instead
                        bg = bg2, 
                        cex.lab = ylab_cex)
       
@@ -379,12 +383,10 @@ plot_gam <- function(model, predictor, quantile.others = 50,
       
       # Draw axes after plot_freq (since add=TRUE doesn't draw axes)
       axis(1)  # x-axis
+      axis(4, las = 1)  # y-axis on right side to avoid conflict with GAM plot
       
-      # Draw y-axis with rounded integer labels
-      y_ticks <- pretty(c(0, ylim_dist[2]), n = 5)
-      y_ticks <- y_ticks[y_ticks >= 0 & y_ticks <= ylim_dist[2]]
-      y_labels <- round(y_ticks, 0)  # Round to 0 decimals (integers)
-      axis(2, at = y_ticks, labels = y_labels, las = 1)  # y-axis with horizontal labels
+      # Add Frequency label on left side next to the plot
+      mtext(side = 2, text = "Frequency", line = 0.5, font = 2, cex = ylab_cex)
     } else if (use_plot_density) {
       # For plot_density, compute density manually to determine ylim
       density_obj <- density(predictor_data)
@@ -397,7 +399,7 @@ plot_gam <- function(model, predictor, quantile.others = 50,
       init_bottom_plot(xlim = xlim_dist, 
                        ylim = ylim_density,
                        xlab = predictor, 
-                       ylab = "Density",
+                       ylab = "",  # Will use mtext instead
                        bg = bg2, 
                        cex.lab = ylab_cex)
       
@@ -408,7 +410,10 @@ plot_gam <- function(model, predictor, quantile.others = 50,
       
       # Add axes
       axis(1)  # x-axis
-      axis(2, las = 1)  # y-axis with horizontal labels
+      axis(4, las = 1)  # y-axis on right side to avoid conflict with GAM plot
+      
+      # Add Density label on left side next to the plot
+      mtext(side = 2, text = "Density", line = 0.5, font = 2, cex = ylab_cex)
     }
   }
   

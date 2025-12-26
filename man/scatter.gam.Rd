@@ -7,7 +7,7 @@
 scatter.gam(
   x,
   y,
-  data.dots = FALSE,
+  data.dots = TRUE,
   three.dots = FALSE,
   data = NULL,
   k = NULL,
