@@ -32,9 +32,9 @@ init_bottom_plot <- function(xlim, ylim, xlab, ylab, bg, cex.lab) {
                   if (k==1) return('dodgerblue')
           
           if (k == 2) {
-            return(c("red4", "dodgerblue"))
+            return(c("red3", "dodgerblue"))
           } else if (k == 3) {
-            return(c("red4", "dodgerblue", "green4"))
+            return(c("red3", "dodgerblue", "darkgreen"))
           } else if (k == 4) {
             return(c("orange1", "orange3", "red2", "red4"))
           } else {

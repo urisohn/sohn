@@ -203,7 +203,7 @@ plot_density <- function(formula, data = NULL, show_means = TRUE, ...) {
   
   #5. Get unique groups (if group is provided)
     if (!is.null(group)) {
-      unique_x <- unique(group)
+      unique_x <- sort(unique(group))
       n_groups <- length(unique_x)
     } else {
       unique_x <- NULL

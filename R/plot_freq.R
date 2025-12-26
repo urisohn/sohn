@@ -130,7 +130,7 @@ plot_freq <- function(formula, data=NULL, freq=TRUE, col='dodgerblue', lwd=9, wi
       stop("'group' must have the same length as 'x'")
     }
     
-    unique_by <- unique(group)
+    unique_by <- sort(unique(group))
     n_groups <- length(unique_by)
     if (n_groups < 2 || n_groups > 3) {
       stop("'group' must have 2 or 3 unique values")

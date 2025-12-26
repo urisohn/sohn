@@ -194,8 +194,8 @@ plot_cdf <- function(formula, data = NULL, show.ks = TRUE, show.quantiles = TRUE
     if (n.nagroup>0) message2("sohn::plot_cdf() says: dropped ",n.nagroup," observations with missing '",group_name_raw,"' values",col='red4')
     if (n.nay>0) message2("sohn::plot_cdf() says: dropped ",n.nay," observations with missing '",y_name_raw,"' values",col='red4')
     
-    # Get unique groups and their order
-    unique_x <- unique(group)
+    # Get unique groups and sort them alphabetically
+    unique_x <- sort(unique(group))
     n_groups <- length(unique_x)
   } else {
     # No group variable - just drop missing y values
