@@ -1,13 +1,14 @@
-#' Plot density of a variable, by another variable
+#' Plot density of a variable, optionally by another variable
 #'
-#' Plots density functions separately for each unique value of a grouping
-#' variable.
+#' Plots density functions. If a grouping variable is provided, plots density
+#' functions separately for each unique value of the grouping variable.
 #'
 #' @param formula A formula of the form \code{y ~ group} where \code{y} is the
-#'   response variable and \code{group} is the grouping variable.
+#'   response variable and \code{group} is an optional grouping variable.
+#'   For single variable (no grouping), use \code{y ~ 1}.
 #' @param data An optional data frame containing the variables in the formula.
 #'   If \code{data} is not provided, variables are evaluated from the calling environment.
-#' @param show.t Logical. If TRUE (default), shows points at means, vertical segments,
+#' @param show_means Logical. If TRUE (default), shows points at means, vertical segments,
 #'   and mean labels. If FALSE, none of these are displayed.
 #' @param ... Additional arguments passed to plotting functions. Can be scalars
 #'   (applied to all groups) or vectors (applied element-wise to each group).
@@ -49,8 +50,11 @@
 #' }
 #'
 #' @examples
-#' # Basic usage with formula syntax
+#' # Basic usage with formula syntax (no grouping)
 #' y <- rnorm(100)
+#' plot_density(y ~ 1)
+#'
+#' # With grouping variable
 #' group <- rep(c("A", "B", "C"), c(30, 40, 30))
 #' plot_density(y ~ group)
 #'
@@ -72,7 +76,7 @@
 #' plot_density(value ~ group, data = df, col = c("red", "blue"))
 #'
 #' @export
-plot_density <- function(formula, data = NULL, show.t = TRUE, ...) {
+plot_density <- function(formula, data = NULL, show_means = TRUE, ...) {
   #OUTLINE
   #1. Capture variable names for labels
   #2. Extract and handle parameters
@@ -101,12 +105,29 @@ plot_density <- function(formula, data = NULL, show.t = TRUE, ...) {
     dots <- list(...)
     
     # Extract show.means parameter (from dots, as it's not a formal parameter)
-    show_means <- if ("show.means" %in% names(dots)) dots$show.means else TRUE
+    show_mean_segments <- if ("show.means" %in% names(dots)) dots$show.means else TRUE
     dots$show.means <- NULL  # Remove from dots so it doesn't get passed to plot functions
+  
+  # Check if formula is actually a formula or a vector
+  # If it's not a formula, capture the variable name before calling validate_plot
+  is_formula_input <- tryCatch(inherits(formula, "formula"), error = function(e) FALSE)
+  if (!is_formula_input) {
+    # Capture the original variable name from the calling environment
+    formula_expr <- substitute(formula)
+    original_y_name <- deparse(formula_expr)
+    # Remove quotes if present
+    original_y_name <- gsub('^"|"$', '', original_y_name)
+    # Clean up the name (remove $ prefixes if present)
+    if (grepl("\\$", original_y_name)) {
+      original_y_name <- strsplit(original_y_name, "\\$")[[1]][length(strsplit(original_y_name, "\\$")[[1]])]
+    }
+  } else {
+    original_y_name <- NULL
+  }
   
   #2. Validate inputs using validation function shared with plot_density, plot_cdf, plot_freq
   # Only formula syntax is supported
-  validated <- validate_plot(formula, NULL, data, func_name = "plot_density", require_group = TRUE)
+  validated <- validate_plot(formula, NULL, data, func_name = "plot_density", require_group = FALSE)
   y <- validated$y
   group <- validated$group
   y_name <- validated$y_name
@@ -114,26 +135,49 @@ plot_density <- function(formula, data = NULL, show.t = TRUE, ...) {
   y_name_raw <- validated$y_name_raw
   group_name_raw <- validated$group_name_raw
   
-  #3. Drop missing data
-    isnagroup=is.na(group)
-    isnay=is.na(y)
-    group=group[!isnagroup & !isnay]
-    y=y[!isnagroup & !isnay]
-    
-    n.nagroup = sum(isnagroup)
-    n.nay = sum(isnay)
-    
-    if (n.nagroup>0) message2("sohn::plot_density() says: dropped ",n.nagroup," observations with missing '",group_name_raw,"' values",col='red4')
-    if (n.nay>0) message2("sohn::plot_density() says: dropped ",n.nay," observations with missing '",y_name_raw,"' values",col='red4')
+  # Fix y_name if it shows "formula" (happens when non-formula input is passed)
+  if (!is.null(original_y_name) && y_name == "formula") {
+    y_name <- original_y_name
+    y_name_raw <- original_y_name
+  }
   
-  #5. Get unique groups
-    unique_x <- unique(group)
-    n_groups <- length(unique_x)
+  #3. Drop missing data
+    if (!is.null(group)) {
+      isnagroup=is.na(group)
+      isnay=is.na(y)
+      group=group[!isnagroup & !isnay]
+      y=y[!isnagroup & !isnay]
+      
+      n.nagroup = sum(isnagroup)
+      n.nay = sum(isnay)
+      
+      if (n.nagroup>0) message2("plot_density() says: dropped ",n.nagroup," observations with missing '",group_name_raw,"' values",col='red4')
+      if (n.nay>0) message2("plot_density() says: dropped ",n.nay," observations with missing '",y_name_raw,"' values",col='red4')
+    } else {
+      isnay=is.na(y)
+      y=y[!isnay]
+      
+      n.nay = sum(isnay)
+      if (n.nay>0) message2("plot_density() says: dropped ",n.nay," observations with missing '",y_name_raw,"' values",col='red4')
+    }
+  
+  #5. Get unique groups (if group is provided)
+    if (!is.null(group)) {
+      unique_x <- unique(group)
+      n_groups <- length(unique_x)
+    } else {
+      unique_x <- NULL
+      n_groups <- 0
+    }
   
   #6. Initialize return values
   
   #7. Get default colors based on number of groups
-    default_colors <- get.colors(n_groups) #See utils.R
+    if (is.null(group)) {
+      default_colors <- get.colors(1) #See utils.R
+    } else {
+      default_colors <- get.colors(n_groups) #See utils.R
+    }
   
   #8. Helper function: extract parameter value for a group
   # Helper function to extract parameter value for a group
@@ -163,20 +207,31 @@ plot_density <- function(formula, data = NULL, show.t = TRUE, ...) {
       }
     }
   
-  #10. Compute densities for each group
+  #10. Compute densities for each group (or single density if no group)
     density_list <- list()
     y_ranges <- list()
     y_density_max <- list()
     
-    for (i in seq_along(unique_x)) {
-      group_val <- unique_x[i]
-      y_group <- y[group == group_val]
-      if (length(y_group) > 0) {
-        # Compute density with any density-specific arguments
-        density_obj <- do.call(density, c(list(x = y_group), density_params))
-        density_list[[i]] <- density_obj
-        y_ranges[[i]] <- range(density_obj$x)
-        y_density_max[[i]] <- max(density_obj$y)
+    if (is.null(group)) {
+      # No grouping: compute single density
+      if (length(y) > 0) {
+        density_obj <- do.call(density, c(list(x = y), density_params))
+        density_list[[1]] <- density_obj
+        y_ranges[[1]] <- range(density_obj$x)
+        y_density_max[[1]] <- max(density_obj$y)
+      }
+    } else {
+      # With grouping: compute density for each group
+      for (i in seq_along(unique_x)) {
+        group_val <- unique_x[i]
+        y_group <- y[group == group_val]
+        if (length(y_group) > 0) {
+          # Compute density with any density-specific arguments
+          density_obj <- do.call(density, c(list(x = y_group), density_params))
+          density_list[[i]] <- density_obj
+          y_ranges[[i]] <- range(density_obj$x)
+          y_density_max[[i]] <- max(density_obj$y)
+        }
       }
     }
   
@@ -208,8 +263,13 @@ plot_density <- function(formula, data = NULL, show.t = TRUE, ...) {
     # Build plot arguments
     # Set main title if not provided
       if (!"main" %in% names(plot_params)) {
-        # Use raw names to get actual variable names (e.g., "value" and "cond" instead of "y" and "group")
-        main_title <- paste0("Comparing Distribution of '", y_name_raw, "' by '", group_name_raw, "'")
+        if (!is.null(group)) {
+          # With grouping: show grouping variable like plot_cdf
+          main_title <- paste0("Comparing Distribution of '", y_name, "' by '", group_name, "'")
+        } else {
+          # No grouping: simple format
+          main_title <- paste0("Distribution of '", y_name, "'")
+        }
       } else {
         main_title <- plot_params$main
       }
@@ -221,7 +281,7 @@ plot_density <- function(formula, data = NULL, show.t = TRUE, ...) {
       xlab_title <- if ("xlab" %in% names(plot_params)) plot_params$xlab else y_name
     
     # Set ylab if not provided
-      ylab_title <- if ("ylab" %in% names(plot_params)) plot_params$ylab else "Density"
+      ylab_title <- if ("ylab" %in% names(plot_params)) plot_params$ylab else "Probability Density"
     
     # Set default ylim if not provided
       if (!"ylim" %in% names(plot_params)) {
@@ -246,6 +306,9 @@ plot_density <- function(formula, data = NULL, show.t = TRUE, ...) {
     plot_params_to_remove <- c(vectorized_params, "xlab", "ylab", "main", "xlim", "ylim", "font.main", "cex.main")
     plot_params[plot_params_to_remove] <- NULL
     
+    # Track if user provided yaxt - if not, we'll draw custom axis with formatted labels
+    user_provided_yaxt <- "yaxt" %in% names(plot_params)
+    
     plot_args <- list(x = first_density, 
                       col = col1, lwd = lwd1, lty = lty1, type = type1,
                       xlab = xlab_title, 
@@ -258,14 +321,57 @@ plot_density <- function(formula, data = NULL, show.t = TRUE, ...) {
                       yaxs = "i",  # Prevent padding below 0
                       font.lab = 2, cex.lab = 1.2, las = 1)
     if (!is.null(pch1)) plot_args$pch <- pch1
+    if (!user_provided_yaxt) plot_args$yaxt <- "n"  # Suppress default y-axis
     
     #16. Set up plot
+      # Ensure adequate top margin for main title and (n=...) text (like plot_freq)
+      old_mar <- par("mar")
+      if (!"mar" %in% names(plot_params)) {
+        # Increase top margin if it's too small (less than 5 lines to accommodate title and N)
+        if (old_mar[3] < 5) {
+          par(mar = c(old_mar[1], old_mar[2], 5, old_mar[4]))
+        }
+      }
+      
       # Set up plot
       do.call(plot, c(plot_args, plot_params))
+      
+      # Add (n=...) below main title (like plot_cdf notation)
+      tot <- length(y)
+      mtext(paste0("(n=", tot, ")"), side = 3, line = 0.75, font = 3, cex = 0.9)
+      
+      # Restore original margins if we changed them
+      if (!"mar" %in% names(plot_params) && old_mar[3] < 5) {
+        par(mar = old_mar)
+      }
+      
+      # Draw custom y-axis with formatted labels (skip leading zeros)
+      if (!user_provided_yaxt) {
+        # Generate nice tick marks
+        y_ticks <- pretty(default_ylim, n = 5)
+        # Only keep ticks that are >= 0 and <= y_max (with small tolerance for rounding)
+        y_ticks <- y_ticks[y_ticks >= 0 & y_ticks <= default_ylim[2] + 0.1]
+        
+        # Format labels to skip leading zeros (e.g., 0.014 becomes .014)
+        format_label <- function(x) {
+          if (x == 0) {
+            return("0")
+          } else {
+            # Convert to character and remove leading zero
+            label <- as.character(x)
+            # If it starts with "0.", replace with "."
+            label <- sub("^0\\.", ".", label)
+            return(label)
+          }
+        }
+        y_labels <- sapply(y_ticks, format_label)
+        
+        axis(2, at = y_ticks, labels = y_labels, las = 1)
+      }
     
     #17. Add remaining densities
-      # Add remaining densities
-      if (length(density_list) > 1) {
+      # Add remaining densities (only if there's grouping)
+      if (!is.null(group) && length(density_list) > 1) {
         for (i in 2:length(density_list)) {
           density_obj <- density_list[[i]]
           
@@ -286,8 +392,8 @@ plot_density <- function(formula, data = NULL, show.t = TRUE, ...) {
       }
     
     #18. Add points at y=0 and x=mean
-      # Add points at y=0 and x=mean for each group (only if show.t is TRUE)
-      if (show.t) {
+      # Add points at y=0 and x=mean for each group (only if show_means is TRUE and there's grouping)
+      if (show_means && !is.null(group)) {
         for (i in seq_along(density_list)) {
           group_val <- unique_x[i]
           y_group <- y[group == group_val]
@@ -299,12 +405,32 @@ plot_density <- function(formula, data = NULL, show.t = TRUE, ...) {
           # Add point at (mean, 0)
           points(x = group_mean, y = 0, pch = 16, col = coli)
         }
+      } else if (show_means && is.null(group)) {
+        # No grouping: add single point at mean
+        group_mean <- mean(y, na.rm = TRUE)
+        coli <- get_param("col", 1) %||% default_colors[1]
+        points(x = group_mean, y = 0, pch = 16, col = coli)
       }
     
     #19. Report means and t-test
       
-      # Add vertical segments at mean values (only if show.t and show.means are TRUE)
-        if (show.t && show_means && n_groups >= 2 && n_groups <= 3) {
+      # Add vertical segments at mean values for non-grouped plots
+        if (show_means && show_mean_segments && is.null(group)) {
+          group_mean <- mean(y, na.rm = TRUE)
+          coli <- get_param("col", 1) %||% default_colors[1]
+          y_max_segment <- y_max_density * 1.1
+          
+          # Add vertical segment
+          segments(x0 = group_mean, y0 = 0, x1 = group_mean, y1 = y_max_segment,
+                   col = coli, lwd = 2)
+          # Add M= label at top of segment
+          text(x = group_mean, y = y_max_segment, 
+               labels = paste0("M=", round(group_mean, 2)),
+               pos = 3, col = coli, cex = 0.8, font = 2)
+        }
+      
+      # Add vertical segments at mean values (only if show_means and show.means are TRUE and there's grouping)
+        if (show_means && show_mean_segments && !is.null(group) && n_groups >= 2 && n_groups <= 3) {
           # Calculate all means
           all_means <- numeric(n_groups)
           for (i in seq_along(density_list)) {
@@ -376,33 +502,35 @@ plot_density <- function(formula, data = NULL, show.t = TRUE, ...) {
           }
         }
     
-    #20. Add legend
-      # Add legend on top with title showing x variable name
-      # Calculate means and sample sizes for each group
-      legend_cols <- sapply(1:length(density_list), function(i) get_param("col", i) %||% default_colors[i])
-      legend_lwds <- sapply(1:length(density_list), function(i) get_param("lwd", i) %||% 4)
-      legend_ltys <- sapply(1:length(density_list), function(i) get_param("lty", i) %||% 1)
-      
-      # Create legend labels with group name and sample size (mean removed)
-      legend_labels <- character(length(density_list))
-      for (i in seq_along(density_list)) {
-        group_val <- unique_x[i]
-        y_group <- y[group == group_val]
-        group_n <- length(y_group)
+    #20. Add legend (only if there's grouping, like plot_freq)
+      if (!is.null(group)) {
+        # Add legend on top with title showing x variable name
+        # Calculate means and sample sizes for each group
+        legend_cols <- sapply(1:length(density_list), function(i) get_param("col", i) %||% default_colors[i])
+        legend_lwds <- sapply(1:length(density_list), function(i) get_param("lwd", i) %||% 4)
+        legend_ltys <- sapply(1:length(density_list), function(i) get_param("lty", i) %||% 1)
         
-        # Format: group_name\nN=sample_size
-        legend_labels[i] <- paste0(group_name, "='", as.character(group_val), "'\n",
-                                   "N=", group_n)
+        # Create legend labels with sample sizes (newline before sample size, lowercase n)
+        group_ns <- sapply(1:length(density_list), function(i) {
+          length(y[group == unique_x[i]])
+        })
+        
+        # Format: just the group value, then (n=sample_size) on new line
+        legend_labels <- paste0(as.character(unique_x), "\n(n=", group_ns, ")")
+        
+        legend("top", legend = legend_labels, 
+               col = legend_cols, lwd = legend_lwds, lty = legend_ltys,
+               horiz = TRUE, bty = "n")
       }
-      
-      legend("top", legend = legend_labels, 
-             col = legend_cols, lwd = legend_lwds, lty = legend_ltys,
-             horiz = TRUE, bty = "n")
   }
   
   #21. Return densities
   # Return densities
-    names(density_list) <- as.character(unique_x)
+    if (!is.null(group)) {
+      names(density_list) <- as.character(unique_x)
+    } else {
+      names(density_list) <- "all"
+    }
   
   # Build return list
     result <- list(densities = density_list)
