@@ -64,7 +64,7 @@
 #'
 #' @importFrom mgcv gam
 #' @export
-scatter.gam <- function(x, y, data.dots = FALSE, three.dots = FALSE, data = NULL, k = NULL, plot.dist = NULL, 
+scatter.gam <- function(x, y, data.dots = TRUE, three.dots = FALSE, data = NULL, k = NULL, plot.dist = NULL, 
                         dot.pch = 16, dot.col = adjustcolor('gray', 0.7), jitter = FALSE, ...) {
   # Capture x and y names for labels (before potentially overwriting)
   x_name <- deparse(substitute(x))
@@ -204,13 +204,8 @@ scatter.gam <- function(x, y, data.dots = FALSE, three.dots = FALSE, data = NULL
   }
   
   # Plot smooth line using grid predictions
-  # Use col from plot_args if provided, otherwise default to 'blue'
-  line_col <- if ("col" %in% names(plot_args)) plot_args$col else 'blue'
-  # Remove col from plot_args to avoid duplication
-  plot_args_no_col <- plot_args
-  plot_args_no_col$col <- NULL
-  plot_args_line <- c(list(x = newdat$x, y = yh, type = 'l', col = line_col, ylim = ylim), 
-                      plot_args_no_col)
+  plot_args_line <- c(list(x = newdat$x, y = yh, type = 'l', col = 'blue', ylim = ylim), 
+                      plot_args)
   do.call(plot, plot_args_line)
   
   # Add data points if requested
@@ -297,8 +292,38 @@ scatter.gam <- function(x, y, data.dots = FALSE, three.dots = FALSE, data = NULL
     if ("las" %in% names(plot_args)) dist_plot_args$las <- plot_args$las
     
     if (use_plot_freq) {
-      # Use plot_freq() for distribution plot of x
-      do.call(plot_freq, c(list(x = x), dist_plot_args))
+      # Calculate ylim from frequencies for background plot
+      freq_table <- table(x)
+      max_freq <- max(freq_table, na.rm = TRUE)
+      ylim_freq <- c(0, max_freq)
+      # Add extra space at top if value labels might be shown (plot_freq default behavior)
+      if (max_freq > 0) {
+        ylim_freq[2] <- max_freq + max(1, max_freq * 0.15)  # Add 15% or at least 1 unit
+      }
+      
+      # Get cex.lab for consistency
+      cex_lab <- if ("cex.lab" %in% names(plot_args)) plot_args$cex.lab else 1.2
+      
+      # Initialize bottom plot with gray80 background
+      init_bottom_plot(xlim = xlim_dist,
+                       ylim = ylim_freq,
+                       xlab = x_name,
+                       ylab = "Frequency",
+                       bg = "gray95",
+                       cex.lab = cex_lab)
+      
+      # Use plot_freq() with add=TRUE to overlay on the background
+      plot_freq_args <- list(x = x,
+                             xlab = x_name,
+                             main = "",
+                             xlim = xlim_dist,
+                             add = TRUE)
+      if ("col" %in% names(dist_plot_args)) plot_freq_args$col <- dist_plot_args$col
+      do.call(plot_freq, plot_freq_args)
+      
+      # Draw axes after plot_freq (since add=TRUE doesn't draw axes)
+      axis(1)  # x-axis
+      axis(2, las = 1)  # y-axis
     } else if (use_hist) {
       # Use hist() for distribution plot of x
       do.call(hist, c(list(x = x), dist_plot_args))

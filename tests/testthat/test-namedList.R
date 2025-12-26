@@ -78,3 +78,4 @@ test_that("namedList works with complex expressions", {
   expect_equal(result[[2]], x + 1)
 })
 
+

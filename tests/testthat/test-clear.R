@@ -26,3 +26,4 @@ test_that("clear returns invisibly", {
 # because it affects the global environment and would interfere with test execution
 # The function is tested for basic functionality and error handling
 
+

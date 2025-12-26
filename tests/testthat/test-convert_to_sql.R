@@ -158,3 +158,4 @@ test_that("convert_to_sql returns invisibly", {
   unlink(temp_sql)
 })
 
+

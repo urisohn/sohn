@@ -129,3 +129,4 @@ test_that("print.simplified_ttest handles Welch vs Student", {
   expect_error(print(tt_result), NA)
 })
 
+

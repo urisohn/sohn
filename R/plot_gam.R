@@ -79,7 +79,7 @@ plot_gam <- function(model, predictor, quantile.others = 50,
   formula_char <- paste(deparse(model_formula), collapse = " ")
   # Check for factor( in the formula (factor is lowercase in R)
   if (grepl("\\bfactor\\s*\\(", formula_char, ignore.case = FALSE)) {
-    message2("A variable in the GAM formula was included with 'factor()'.\n",
+    message.col("A variable in the GAM formula was included with 'factor()'.\n",
          "Please, instead, convert that variable to factor  before running the GAM model\n",
          "\nExample: Instead of gam(y ~ factor(x), data = df), do:\n",
          "    df$x <- factor(df$x)\n",

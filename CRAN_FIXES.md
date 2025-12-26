@@ -73,3 +73,4 @@ The following are NOTES (not errors) and are acceptable for CRAN:
 - `R/plot_freq.R` - Added freq/width documentation, documented fhist, fixed get.colors call
 - `man/text2.Rd` - Fixed markup braces
 
+

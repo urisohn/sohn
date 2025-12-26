@@ -8,16 +8,16 @@
 #' @param group A vector (factor, character, or numeric) used to group the data,
 #'   or a column name (character string or unquoted) if \code{data} is provided.
 #' @param data An optional data frame containing the variables \code{y} and \code{group}.
+#' @param show.means Logical. If TRUE (default), shows vertical segments at mean values
+#'   for 2-3 groups. For 2 groups, low mean uses pos=2 and high mean uses pos=4.
+#'   For 3 groups, mid mean uses pos=3. For 4+ groups, vertical segments are not shown.
 #' @param show.t Logical. If TRUE (default), shows points at means, vertical segments,
 #'   and mean labels. If FALSE, none of these are displayed.
 #' @param ... Additional arguments passed to plotting functions. Can be scalars
 #'   (applied to all groups) or vectors (applied element-wise to each group).
 #'   Common parameters include \code{col}, \code{lwd}, \code{lty}, \code{pch},
 #'   \code{type}, etc. Arguments can also be passed to \code{density()} such as
-#'   \code{bw}, \code{kernel}, etc. Additionally, \code{show.means} can be passed
-#'   via \code{...}: Logical. If TRUE (default), shows vertical segments at mean values
-#'   for 2-3 groups. For 2 groups, low mean uses pos=2 and high mean uses pos=4.
-#'   For 3 groups, mid mean uses pos=3. For 4+ groups, vertical segments are not shown.
+#'   \code{bw}, \code{kernel}, etc.
 #'
 #' @return Invisibly returns a list containing:
 #' \itemize{
@@ -69,9 +69,9 @@
 #'
 #' # Using data frame
 #' df <- data.frame(value = rnorm(100), group = rep(c("A", "B"), 50))
-#' plot_density(df$value, df$group)
-#' plot_density(value ~ group, data = df)  # formula syntax
-#' plot_density(value ~ group, data = df, col = c("red", "blue"))
+#' plot_density(value, group, data = df)
+#' plot_density("value", "group", data = df)  # quoted column names also work
+#' plot_density(value, group, data = df, col = c("red", "blue"))
 #'
 #' @export
 plot_density <- function(y, group, data = NULL, show.t = TRUE, ...) {
@@ -110,7 +110,6 @@ plot_density <- function(y, group, data = NULL, show.t = TRUE, ...) {
   validated <- validate_plot(y, group, data, func_name = "plot_density", require_group = TRUE)
   y <- validated$y
   group <- validated$group
-  # Use names from validate_plot (it handles both formula and standard syntax)
   y_name <- validated$y_name
   group_name <- validated$group_name
   y_name_raw <- validated$y_name_raw
@@ -210,8 +209,8 @@ plot_density <- function(y, group, data = NULL, show.t = TRUE, ...) {
     # Build plot arguments
     # Set main title if not provided
       if (!"main" %in% names(plot_params)) {
-        # Use the captured variable names (e.g., "value" and "cond" instead of "y" and "group")
-        main_title <- paste0("Comparing Distribution of '", y_name, "' by '", group_name, "'")
+        # Use raw names to get actual variable names (e.g., "value" and "cond" instead of "y" and "group")
+        main_title <- paste0("Comparing Distribution of '", y_name_raw, "' by '", group_name_raw, "'")
       } else {
         main_title <- plot_params$main
       }
@@ -385,15 +384,15 @@ plot_density <- function(y, group, data = NULL, show.t = TRUE, ...) {
       legend_lwds <- sapply(1:length(density_list), function(i) get_param("lwd", i) %||% 4)
       legend_ltys <- sapply(1:length(density_list), function(i) get_param("lty", i) %||% 1)
       
-      # Create legend labels with group value and sample size
+      # Create legend labels with group name and sample size (mean removed)
       legend_labels <- character(length(density_list))
       for (i in seq_along(density_list)) {
         group_val <- unique_x[i]
         y_group <- y[group == group_val]
         group_n <- length(y_group)
         
-        # Format: 'value'\nN=sample_size
-        legend_labels[i] <- paste0("'", as.character(group_val), "'\n",
+        # Format: group_name\nN=sample_size
+        legend_labels[i] <- paste0(group_name, "='", as.character(group_val), "'\n",
                                    "N=", group_n)
       }
       

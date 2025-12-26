@@ -4,13 +4,11 @@
 #' displaying the full range from minimum to maximum value.
 #'
 #' @param x A numeric vector of values to plot frequencies for, or a column name (character string) if \code{data} is provided.
-#' @param group A grouping variable (with 2 or 3 unique values). If specified, frequencies are computed separately for each group and plotted with different colors. Can be a vector or a column name (character string) if \code{data} is provided.
-#' @param freq Logical. If TRUE (default), displays frequencies. If FALSE, displays proportions.
 #' @param col Color for the bars. 
 #' @param lwd Line width for the frequency bars. Default is 9.
-#' @param width Numeric. Width of the frequency bars. If NULL (default), automatically calculated.
 #' @param value.labels Logical. If TRUE, displays frequencies on top of each line. 
 #' @param add Logical. If TRUE, adds to an existing plot instead of creating a new one. 
+#' @param group A grouping variable (with 2 or 3 unique values). If specified, frequencies are computed separately for each group and plotted with different colors. Can be a vector or a column name (character string) if \code{data} is provided.
 #' @param data Optional data frame containing the variables \code{x} and optionally \code{group}.
 #' @param show.legend Logical. If TRUE (default), displays a legend when \code{group} is specified. If FALSE, no legend is shown.
 #' @param legend.title Character string. Title for the legend when \code{group} is specified. If NULL (default), no title is shown.
@@ -39,8 +37,8 @@
 #'
 #' # Using a data frame
 #' df <- data.frame(value = c(1, 1, 2, 2, 2, 5, 5), group = c("A", "A", "A", "B", "B", "A", "B"))
-#' plot_freq(df$value)
-#' plot_freq(df$value, group = df$group)  # with grouping
+#' plot_freq(x = "value", data = df)
+#' plot_freq(x = value, group = group, data = df)  # unquoted column names also work
 #'
 
 #' @export
@@ -116,7 +114,7 @@ plot_freq <- function(x, group=NULL, freq=TRUE, col='dodgerblue', lwd=9, width=N
     if (length(col) == n_groups && is.character(col)) {
       group_cols <- col
     } else {
-      group_cols <- get.colors(n_groups)
+      group_cols <- sohn:::get.colors(n_groups)
     }
     
     # Compute frequencies using cross-tabulation
@@ -541,9 +539,6 @@ plot_freq <- function(x, group=NULL, freq=TRUE, col='dodgerblue', lwd=9, width=N
 }
 
 # Alias for backward compatibility
-#' @title Deprecated alias for plot_freq
-#' @description This function is deprecated. Use \code{\link{plot_freq}} instead.
-#' @param ... Arguments passed to \code{\link{plot_freq}}
 #' @export
 fhist <- function(...) {
   message2("The function fhist() is deprecated, please use plot_freq() instead going forward", col = "red", font = 2)

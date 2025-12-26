@@ -93,3 +93,4 @@ test_that("text2 handles edge cases", {
   # expect_error(text2(5, 5, ""), NA)
 })
 
+

@@ -27,3 +27,4 @@ test_that("fhist prints deprecation message", {
   expect_error(fhist(x), NA)
 })
 
+

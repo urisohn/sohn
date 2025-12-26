@@ -193,3 +193,4 @@ test_that("twolines returns correct structure", {
   expect_true("u.sig" %in% names(result))
 })
 
+
