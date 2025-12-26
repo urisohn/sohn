@@ -186,7 +186,11 @@ scatter.gam <- function(x, y, data.dots = TRUE, three.dots = FALSE, data = NULL,
     layout(matrix(c(1, 2), nrow = 2, ncol = 1), heights = c(2, 1))
     
     # Set margins: remove bottom margin from top plot, remove top margin from bottom plot
-    par(mar = c(0, 4.1, 4.1, 2.1))  # Top plot: no bottom margin
+    par(mar = c(0, 4.1, 3, 2.1))  # Top plot: no bottom margin, 3 lines top margin
+  } else {
+    # Set top margin to 3 lines when not plotting distribution
+    current_mar <- par("mar")
+    par(mar = c(current_mar[1], current_mar[2], 3, current_mar[4]))
   }
   
   # Set default labels if not provided
@@ -204,9 +208,13 @@ scatter.gam <- function(x, y, data.dots = TRUE, three.dots = FALSE, data = NULL,
   }
   
   # Plot smooth line using grid predictions
-  plot_args_line <- c(list(x = newdat$x, y = yh, type = 'l', col = 'blue', ylim = ylim), 
+  plot_args_line <- c(list(x = newdat$x, y = yh, type = 'l', col = 'blue', ylim = ylim, lwd = 3), 
                       plot_args)
   do.call(plot, plot_args_line)
+  
+  # Add title on top
+  mtext(side = 3, text = paste0("Scatter GAM - ", x_name, " & ", y_name), 
+        line = 1, font = 2, cex = 1.2)
   
   # Add data points if requested
   if (data.dots == TRUE) {
