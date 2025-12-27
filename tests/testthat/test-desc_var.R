@@ -36,8 +36,8 @@ test_that("desc_var handles missing values", {
   group <- rep(c("A", "B"), 50)
   
   result <- desc_var(y, group)
-  expect_true(all(result$NA_total >= 0))
-  expect_true(sum(result$NA_total) == 10)
+  expect_true(all(result$missing >= 0))
+  expect_true(sum(result$missing) == 10)
 })
 
 test_that("desc_var respects decimals parameter", {
@@ -63,7 +63,7 @@ test_that("desc_var returns all expected columns", {
   
   result <- desc_var(y, group)
   
-  expected_cols <- c("group", "n", "mean", "sd", "se", "median", "NA_total",
+  expected_cols <- c("group", "n", "mean", "sd", "se", "median", "missing", "unique",
                      "mode", "freq_mode", "mode2", "freq_mode2",
                      "min", "max")
   

@@ -18,7 +18,8 @@
 #'     \item \code{sd}: Standard deviation
 #'     \item \code{se}: Standard error
 #'     \item \code{median}: Median
-#'     \item \code{NA_total}: Number of observations with missing (NA) values
+#'     \item \code{missing}: Number of observations with missing (NA) values
+#'     \item \code{unique}: Number of unique values
 #'     \item \code{mode}: Most frequent value
 #'     \item \code{freq_mode}: Frequency of mode
 #'     \item \code{mode2}: 2nd most frequent value
@@ -351,19 +352,21 @@ desc_var <- function(y, group = NULL, data = NULL, decimals = 3) {
   
   # 3. Define helper function to compute statistics for a vector
   compute_stats <- function(x) {
+    n_total <- length(x)  # Total count including missing values
     na_count <- sum(is.na(x))
-    x <- x[!is.na(x)]  # Remove NAs
-    n <- length(x)
+    x <- x[!is.na(x)]  # Remove NAs for statistics computation
+    n <- length(x)  # Count of non-missing values
     
-    # Handle empty case
+    # Handle empty case (all values are missing)
     if (n == 0) {
       return(list(
-        n = 0L,
+        n = as.integer(n_total),  # Total count including missing
         mean = NA_real_,
         sd = NA_real_,
         se = NA_real_,
         median = NA_real_,
-        na = as.integer(na_count),
+        missing = as.integer(na_count),
+        unique = 0L,
         min = NA_real_,
         max = NA_real_,
         mode = NA_real_,
@@ -381,8 +384,10 @@ desc_var <- function(y, group = NULL, data = NULL, decimals = 3) {
     min_val <- min(x)
     max_val <- max(x)
     
-    # Compute mode statistics only if there are repeated values
+    # Compute number of unique values
     n_unique <- length(unique(x))
+    
+    # Compute mode statistics only if there are repeated values
     has_repeats <- n_unique < n
     
     if (has_repeats) {
@@ -401,12 +406,13 @@ desc_var <- function(y, group = NULL, data = NULL, decimals = 3) {
     
     # Return consistent structure
     return(list(
-      n = as.integer(n),
+      n = as.integer(n_total),  # Total count including missing values
       mean = as.numeric(mean_val),
       sd = as.numeric(sd_val),
       se = as.numeric(se_val),
       median = as.numeric(median_val),
-      na = as.integer(na_count),
+      missing = as.integer(na_count),
+      unique = as.integer(n_unique),
       min = as.numeric(min_val),
       max = as.numeric(max_val),
       mode = as.numeric(mode_val),
@@ -431,7 +437,8 @@ desc_var <- function(y, group = NULL, data = NULL, decimals = 3) {
       sd = stats$sd,
       se = stats$se,
       median = stats$median,
-      NA_total = stats$na,
+      missing = stats$missing,
+      unique = stats$unique,
       min = stats$min,
       max = stats$max,
       stringsAsFactors = FALSE
@@ -491,7 +498,8 @@ desc_var <- function(y, group = NULL, data = NULL, decimals = 3) {
           sd = stats$sd,
           se = stats$se,
           median = stats$median,
-          NA_total = stats$na,
+          missing = stats$missing,
+          unique = stats$unique,
           min = stats$min,
           max = stats$max,
           stringsAsFactors = FALSE
@@ -521,7 +529,8 @@ desc_var <- function(y, group = NULL, data = NULL, decimals = 3) {
           sd = stats$sd,
           se = stats$se,
           median = stats$median,
-          NA_total = stats$na,
+          missing = stats$missing,
+          unique = stats$unique,
           min = stats$min,
           max = stats$max,
           stringsAsFactors = FALSE
@@ -578,7 +587,8 @@ desc_var <- function(y, group = NULL, data = NULL, decimals = 3) {
       sd = "Standard deviation",
       se = "Standard error",
       median = "Median (50th percentile)",
-      NA_total = "Number of observations with missing values (NA)",
+      missing = "Number of observations with missing values (NA)",
+      unique = "Number of unique values",
       mode = "Most frequent value",
       freq_mode = "Frequency of mode",
       mode2 = "2nd most frequent value",
