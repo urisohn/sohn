@@ -1,12 +1,11 @@
-#' Create a list where objects are automatically named based on their existing names 
+#' Improves list() by allowing not naming (some) objects.  
 #' 
 #' @param ... Objects to include in the list. Can be named or unnamed.
 #'
-#' @return A named list containing the input objects, with names derived from
-#'   the input object names when not explicitly provided.
+#' @return A list where unnamed objects are automatically named with their existing name.
 #'
 #' @details
-#' This function is inspired by a solution from Stack Overflow:
+#' This function is based on a solution on Stack Overflow:
 #' \url{https://stackoverflow.com/questions/16951080/can-lists-be-created-that-name-themselves-based-on-input-object-names}
 #'
 #' If objects are passed with explicit names (e.g., \code{list2(a = x, b = y)}),

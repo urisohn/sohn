@@ -4,6 +4,7 @@
 #' @param quiet Logical. If TRUE, suppresses missing value messages. Default is FALSE.
 #' @param ... Additional arguments passed to print
 #'
+#' @importFrom stats cor
 #' @export
 print.simplified_ttest <- function(x, quiet = FALSE, ...) {
   # Determine if it's a paired test

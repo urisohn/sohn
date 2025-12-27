@@ -24,19 +24,20 @@ init_bottom_plot <- function(xlim, ylim, xlab, ylab, bg, cex.lab) {
   rect(usr[1], usr[3], usr[2], usr[4], col = bg, border = NA)
   box()
 }
+  
 
 
 #1 Get colors
 
       get.colors <- function(k) {
-                  if (k==1) return('dodgerblue')
+                  if (k==1) return('steelblue')
           
           if (k == 2) {
-            return(c("red3", "dodgerblue"))
+            return(c("firebrick", "steelblue"))
           } else if (k == 3) {
-            return(c("red3", "dodgerblue", "darkgreen"))
+            return( c('firebrick','deepskyblue3','black'))
           } else if (k == 4) {
-            return(c("orange1", "orange3", "red2", "red4"))
+            return(c('firebrick','orange2', 'deepskyblue3','black'))
           } else {
             # For 5+ groups, use a combination of colors that cycle
             # Start with the 4-group palette and add more colors

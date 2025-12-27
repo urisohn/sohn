@@ -1,58 +1,25 @@
 #' Plot density of a variable, optionally by another variable
 #'
-#' Plots density functions. If a grouping variable is provided, plots density
-#' functions separately for each unique value of the grouping variable.
+#' Plots the distribution of a variable by group, simply: \code{plot_density(y ~ x)}
 #'
-#' @param formula A formula of the form \code{y ~ group} where \code{y} is the
-#'   response variable and \code{group} is an optional grouping variable.
-#'   For single variable (no grouping), use \code{y ~ 1}.
+#' @param formula Either the single variable name \code{y} or a formula like \code{y ~ x}.
 #' @param data An optional data frame containing the variables in the formula.
-#'   If \code{data} is not provided, variables are evaluated from the calling environment.
-#' @param show_means Logical. If TRUE (default), shows points at means, vertical segments,
-#'   and mean labels. If FALSE, none of these are displayed.
-#' @param ... Additional arguments passed to plotting functions. Can be scalars
-#'   (applied to all groups) or vectors (applied element-wise to each group).
-#'   Common parameters include \code{col}, \code{lwd}, \code{lty}, \code{pch},
-#'   \code{type}, etc. Arguments can also be passed to \code{density()} such as
-#'   \code{bw}, \code{kernel}, etc. Additionally, \code{show.means} can be passed
-#'   as a logical value (default TRUE) to show vertical segments at mean values
-#'   for 2-3 groups. For 2 groups, low mean uses pos=2 and high mean uses pos=4.
-#'   For 3 groups, mid mean uses pos=3. For 4+ groups, vertical segments are not shown.
-#'
-#' @return Invisibly returns a list containing:
-#' \itemize{
-#'   \item \code{densities}: A list of density objects, one for each group
-#' }
-#'
+#' @param show_means Logical. If TRUE (default), shows points at means.
+#' @param ... Additional arguments passed to plotting functions.
+
 #' @details
-#' This function:
-#' \itemize{
-#'   \item Splits the response variable by unique values of the grouping variable
-#'   \item Computes a density estimate for each group
-#'   \item Plots all densities on the same graph
-#'   \item Handles plotting parameters: scalars apply to all groups, vectors
-#'     apply element-wise to groups (in order of unique grouping variable values)
-#' }
-#'
-#' The densities are plotted as smooth curves. Parameters like
+#' Plot parameters like
 #' \code{col}, \code{lwd}, \code{lty}, and \code{pch} can be specified as:
 #' \itemize{
 #'   \item A single value: applied to all groups
 #'   \item A vector: applied to groups in order of unique \code{group} values
 #' }
 #'
-#' Default colors are automatically assigned based on the number of groups:
-#' \itemize{
-#'   \item 2 groups: red4, dodgerblue
-#'   \item 3 groups: red4, dodgerblue, green4
-#'   \item 4 groups: orange1, orange3, red2, red4
-#'   \item 5+ groups: extends with additional colors
-#' }
 #'
 #' @examples
 #' # Basic usage with formula syntax (no grouping)
 #' y <- rnorm(100)
-#' plot_density(y ~ 1)
+#' plot_density(y)
 #'
 #' # With grouping variable
 #' group <- rep(c("A", "B", "C"), c(30, 40, 30))

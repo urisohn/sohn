@@ -1,6 +1,6 @@
-#' Format P-Values for Display (p<.0001)
+#' Format P-Values for Display 
 #'
-#' Formats p-values for clean display in figures and tables.
+#' Formats p-values for clean display in figures and tables. e.g., p = .0231, p<.0001
 #'
 #' @param p A numeric vector of p-values to format.
 #' @param digits Number of decimal places to round to. Default is 4.

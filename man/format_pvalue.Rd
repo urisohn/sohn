@@ -2,7 +2,7 @@
 % Please edit documentation in R/format_pvalue.R
 \name{format_pvalue}
 \alias{format_pvalue}
-\title{Format P-Values for Display (p<.0001)}
+\title{Format P-Values for Display}
 \usage{
 format_pvalue(p, digits = 4, include_p = FALSE)
 }
@@ -18,7 +18,7 @@ value (e.g., "p = .05"). Default is FALSE.}
 A character vector of formatted p-values.
 }
 \description{
-Formats p-values for clean display in figures and tables.
+Formats p-values for clean display in figures and tables. e.g., p = .0231, p<.0001
 }
 \details{
 This function formats p-values by:

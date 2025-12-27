@@ -9,7 +9,7 @@
 #'   interpreted. For the default method, either all arguments are vectors of
 #'   the same length, or one argument is a data frame and the rest are vectors
 #'   that can be matched by name. If \code{data} is provided, variables can be
-#'   specified as unquoted names (e.g., \code{table2(DV1, x1, data = df)}).
+#'   specified as unquoted names (e.g., \code{table2(group, status, data = df)}).
 #' @param data Optional data frame containing the variables. If provided, variables
 #'   in \code{...} can be specified as unquoted column names.
 #' @param exclude Levels to remove from all factors in \code{...}.
@@ -70,7 +70,7 @@
 #' table2(df$group, df$status, prop = 1, digits = 3)  # Row proportions with 3 decimals
 #'
 #' # Using data argument with unquoted variable names
-#' table2(DV1, x1, data = df, prop = "col")
+#' table2(group, status, data = df, prop = "col")
 #'
 #' @export
 table2 <- function(..., data = NULL, exclude = if (useNA == "no") c(NA, NaN), 

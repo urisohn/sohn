@@ -20,9 +20,8 @@ This function performs three cleanup operations:
   \item \strong{Graphics}: Closes all open graphics devices (except the null device)
 }
 
-\strong{Warning}: This function will permanently delete all objects in your
-global environment. Make sure you have saved any important data before running
-this function.
+\strong{Warning}: This function deletes all objects in your
+global environment. Save anything that you wish to keep before running.
 }
 \examples{
 # Create some objects

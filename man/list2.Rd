@@ -2,7 +2,7 @@
 % Please edit documentation in R/list2.R
 \name{list2}
 \alias{list2}
-\title{Create a list where objects are automatically named based on their existing names}
+\title{Improves list() by allowing not naming (some) objects.}
 \usage{
 list2(...)
 }
@@ -10,14 +10,13 @@ list2(...)
 \item{...}{Objects to include in the list. Can be named or unnamed.}
 }
 \value{
-A named list containing the input objects, with names derived from
-  the input object names when not explicitly provided.
+A list where unnamed objects are automatically named with their existing name.
 }
 \description{
-Create a list where objects are automatically named based on their existing names
+Improves list() by allowing not naming (some) objects.
 }
 \details{
-This function is inspired by a solution from Stack Overflow:
+This function is based on a solution on Stack Overflow:
 \url{https://stackoverflow.com/questions/16951080/can-lists-be-created-that-name-themselves-based-on-input-object-names}
 
 If objects are passed with explicit names (e.g., \code{list2(a = x, b = y)}),
