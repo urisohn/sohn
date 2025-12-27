@@ -79,12 +79,11 @@ plot_gam <- function(model, predictor, quantile.others = 50,
   formula_char <- paste(deparse(model_formula), collapse = " ")
   # Check for factor( in the formula (factor is lowercase in R)
   if (grepl("\\bfactor\\s*\\(", formula_char, ignore.case = FALSE)) {
-    message2("A variable in the GAM formula was included with 'factor()'.\n",
+    message2("plot_gam() says: A variable in the GAM formula was included with 'factor()'.\n",
          "Please, instead, convert that variable to factor  before running the GAM model\n",
          "\nExample: Instead of gam(y ~ factor(x), data = df), do:\n",
          "    df$x <- factor(df$x)\n",
-         "    gam(y ~ x, data = df)", col = 'red')
-    stop()
+         "    gam(y ~ x, data = df)", col = 'red', stop = TRUE)
   }
   
   # Validate quantile.others
@@ -371,7 +370,7 @@ plot_gam <- function(model, predictor, quantile.others = 50,
       
       # Use plot_freq() with add=TRUE to overlay on the background
       # Set col2 if provided, otherwise use plot_freq default
-      plot_freq_args <- list(x = predictor_data, 
+      plot_freq_args <- list(formula = predictor_data, 
                              xlab = predictor,  # Predictor variable name
                              main = "",
                              xlim = xlim_dist,
@@ -383,10 +382,10 @@ plot_gam <- function(model, predictor, quantile.others = 50,
       
       # Draw axes after plot_freq (since add=TRUE doesn't draw axes)
       axis(1)  # x-axis
-      axis(4, las = 1)  # y-axis on right side to avoid conflict with GAM plot
+      axis(2, las = 1)  # y-axis on left side
       
-      # Add Frequency label on left side next to the plot
-      mtext(side = 2, text = "Frequency", line = 0.5, font = 2, cex = ylab_cex)
+      # Add Frequency label on left side, aligned with top plot's ylab and in gray like tick numbers
+      mtext(side = 2, text = "Frequency", line = 2.5, font = 2, cex = ylab_cex, col = "gray30")
     } else if (use_plot_density) {
       # For plot_density, compute density manually to determine ylim
       density_obj <- density(predictor_data)
@@ -412,8 +411,8 @@ plot_gam <- function(model, predictor, quantile.others = 50,
       axis(1)  # x-axis
       axis(4, las = 1)  # y-axis on right side to avoid conflict with GAM plot
       
-      # Add Density label on left side next to the plot
-      mtext(side = 2, text = "Density", line = 0.5, font = 2, cex = ylab_cex)
+      # Add Density label on left side, aligned with top plot's ylab and in gray like tick numbers
+      mtext(side = 2, text = "Density", line = 2.5, font = 2, cex = ylab_cex, col = "gray30")
     }
   }
   
