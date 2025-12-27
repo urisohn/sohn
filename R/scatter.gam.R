@@ -201,7 +201,10 @@ scatter.gam <- function(x, y, data.dots = TRUE, three.dots = FALSE, data = NULL,
     layout(matrix(c(1, 2), nrow = 2, ncol = 1), heights = c(2, 1))
     
     # Set margins: remove bottom margin from top plot, remove top margin from bottom plot
-    par(mar = c(0, 4.1, 3, 2.1))  # Top plot: no bottom margin, 3 lines top margin
+    # Use same left and right margins for both plots to ensure x-axes align
+    # Left margin: 5.1 to accommodate y-axis label on top plot
+    # Right margin: 4.1 to accommodate y-axis labels on bottom plot (axis 4)
+    par(mar = c(0, 5.1, 3, 4.1))  # Top plot: no bottom margin, 3 lines top margin, aligned margins
   } else {
     # Set top margin to 3 lines when not plotting distribution
     current_mar <- par("mar")
@@ -222,16 +225,17 @@ scatter.gam <- function(x, y, data.dots = TRUE, three.dots = FALSE, data = NULL,
     plot_args$xaxt <- "n"
   }
   
-  # Plot smooth line using grid predictions
-  plot_args_line <- c(list(x = newdat$x, y = yh, type = 'l', col = 'blue', ylim = ylim, lwd = 3), 
-                      plot_args)
-  do.call(plot, plot_args_line)
+  # Create plot frame first (without drawing the line yet)
+  # We'll draw the line after the data points so it appears on top
+  plot_args_frame <- c(list(x = newdat$x, y = yh, type = 'n', ylim = ylim), 
+                       plot_args)
+  do.call(plot, plot_args_frame)
   
   # Add title on top
   mtext(side = 3, text = paste0("Scatter GAM - ", x_name, " & ", y_name), 
         line = 1, font = 2, cex = 1.2)
   
-  # Add data points if requested
+  # Add data points if requested (draw these first, before the line)
   if (data.dots == TRUE) {
     # Detect dense data and adjust visualization accordingly
     n_points <- length(x)
@@ -282,10 +286,14 @@ scatter.gam <- function(x, y, data.dots = TRUE, three.dots = FALSE, data = NULL,
     points(x3_means, y3_means, pch = 16)
   }
   
+  # Draw smooth line on top of data points
+  lines(newdat$x, yh, col = 'blue', lwd = 3)
+  
   # Plot distribution in bottom panel if requested
   if (plot_distribution) {
     # Switch to bottom panel
-    par(mar = c(5.1, 4.1, 0, 2.1))  # Bottom plot: no top margin
+    # Use same left and right margins as top plot to ensure x-axes align
+    par(mar = c(5.1, 5.1, 0, 4.1))  # Bottom plot: no top margin, aligned margins with top plot
     
     # Determine xlim for distribution plot
     # Use user-provided xlim if available, otherwise calculate from data with buffer
@@ -336,7 +344,8 @@ scatter.gam <- function(x, y, data.dots = TRUE, three.dots = FALSE, data = NULL,
                        cex.lab = cex_lab)
       
       # Use plot_freq() with add=TRUE to overlay on the background
-      plot_freq_args <- list(x = x,
+      # Pass x as first positional argument (formula parameter) without naming it
+      plot_freq_args <- list(x,
                              xlab = x_name,
                              main = "",
                              xlim = xlim_dist,
@@ -346,20 +355,22 @@ scatter.gam <- function(x, y, data.dots = TRUE, three.dots = FALSE, data = NULL,
       
       # Draw axes after plot_freq (since add=TRUE doesn't draw axes)
       axis(1)  # x-axis
-      axis(4, las = 1)  # y-axis on right side to avoid conflict with GAM plot
+      axis(2, las = 1, col = "gray40", col.axis = "gray40")  # y-axis on left side with gray40 color
       
-      # Add Frequency label on left side next to the plot
-      mtext(side = 2, text = "Frequency", line = 0.5, font = 2, cex = cex_lab)
+      # Add Frequency label on left side next to the plot with gray40 color
+      # Use line = 3 to match the default ylab position from plot() (mgp[1] = 3)
+      mtext(side = 2, text = "Frequency", line = 3, font = 2, cex = cex_lab, col = "gray40")
     } else if (use_hist) {
       # Use hist() for distribution plot of x
-      # Suppress left y-axis and add right y-axis
+      # Suppress default y-axis to draw custom one
       hist_args <- c(list(x = x, yaxt = "n"), dist_plot_args)
       do.call(hist, hist_args)
-      axis(4, las = 1)  # y-axis on right side to avoid conflict with GAM plot
+      axis(2, las = 1, col = "gray40", col.axis = "gray40")  # y-axis on left side with gray40 color
       
-      # Add Frequency label on left side next to the plot
+      # Add Frequency label on left side next to the plot with gray40 color
+      # Use line = 3 to match the default ylab position from plot() (mgp[1] = 3)
       cex_lab <- if ("cex.lab" %in% names(plot_args)) plot_args$cex.lab else 1.2
-      mtext(side = 2, text = "Frequency", line = 0.5, font = 2, cex = cex_lab)
+      mtext(side = 2, text = "Frequency", line = 3, font = 2, cex = cex_lab, col = "gray40")
     }
   }
   

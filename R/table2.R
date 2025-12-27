@@ -8,7 +8,10 @@
 #'   character strings), or a list (or data frame) whose components can be so
 #'   interpreted. For the default method, either all arguments are vectors of
 #'   the same length, or one argument is a data frame and the rest are vectors
-#'   that can be matched by name.
+#'   that can be matched by name. If \code{data} is provided, variables can be
+#'   specified as unquoted names (e.g., \code{table2(DV1, x1, data = df)}).
+#' @param data Optional data frame containing the variables. If provided, variables
+#'   in \code{...} can be specified as unquoted column names.
 #' @param exclude Levels to remove from all factors in \code{...}.
 #' @param useNA Whether to include NA values in the table.
 #' @param dnn The names to be given to the dimensions in the result.
@@ -66,8 +69,11 @@
 #' table2(df$group, df$status, prop = "row")  # Row proportions (character)
 #' table2(df$group, df$status, prop = 1, digits = 3)  # Row proportions with 3 decimals
 #'
+#' # Using data argument with unquoted variable names
+#' table2(DV1, x1, data = df, prop = "col")
+#'
 #' @export
-table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN), 
+table2 <- function(..., data = NULL, exclude = if (useNA == "no") c(NA, NaN), 
                   useNA = c("no", "ifany", "always"), 
                   dnn = NULL, deparse.level = 1, prop = NULL, digits = 3) {
   
@@ -91,18 +97,20 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
     exclude <- if (useNA == "no") c(NA, NaN) else NULL
   }
   
-  # TASK 2: Capture the original call to detect dataframe column references
-  dots <- list(...)
-  dot_expressions <- as.list(substitute(list(...)))[-1L]
+  # TASK 2: Validate inputs and handle data argument
+  validated <- validate_table2(..., data = data, func_name = "table2")
+  dots <- validated$dots
+  dot_expressions <- validated$dot_expressions
+  data_name <- validated$data_name
   
   # TASK 3: Call base table function
   # Let base::table handle dnn default (it uses list.names internally)
   if (is.null(dnn)) {
-    result <- base::table(..., exclude = exclude, useNA = useNA, 
-                          deparse.level = deparse.level)
+    result <- do.call(base::table, c(dots, list(exclude = exclude, useNA = useNA, 
+                          deparse.level = deparse.level)))
   } else {
-    result <- base::table(..., exclude = exclude, useNA = useNA, 
-                         dnn = dnn, deparse.level = deparse.level)
+    result <- do.call(base::table, c(dots, list(exclude = exclude, useNA = useNA, 
+                         dnn = dnn, deparse.level = deparse.level)))
   }
   
   # TASK 4: Extract variable names from dataframe column references
@@ -114,6 +122,14 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
     # Helper function to extract variable name from an expression
     extract_var_name <- function(expr) {
       var_name <- ""
+      # If data was provided, check if it's a symbol (unquoted variable name)
+      if (!is.null(data)) {
+        if (is.symbol(expr) || is.name(expr)) {
+          var_name <- as.character(expr)
+          return(var_name)
+        }
+      }
+      
       # Check if it's a dataframe column reference: df$var
       if (is.call(expr) && length(expr) >= 3) {
         op <- expr[[1]]
@@ -194,12 +210,12 @@ table2 <- function(..., exclude = if (useNA == "no") c(NA, NaN),
       } else if (prop_lower %in% c("col", "column", "columns")) {
         prop <- 2
       } else {
-        stop("prop must be 0, 1, 2, 'all', 'row'/'rows', or 'col'/'column'/'columns'")
+        stop("table2(): prop must be 0, 1, 2, 'all', 'row'/'rows', or 'col'/'column'/'columns'", call. = FALSE)
       }
     }
     
     if (!prop %in% c(0, 1, 2)) {
-      stop("prop must be 0, 1, 2, 'all', 'row', or 'column'")
+      stop("table2(): prop must be 0, 1, 2, 'all', 'row', or 'column'", call. = FALSE)
     }
     
     # Get original dimnames before modification

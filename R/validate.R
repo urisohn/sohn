@@ -218,3 +218,114 @@ validate_plot <- function(y, group = NULL, data = NULL, func_name = "plot", requ
   )
 }
 
+#' Validate Inputs for table2() Function
+#'
+#' Validates inputs for table2() function that accepts multiple variables via ...
+#' with optional data frame.
+#'
+#' @param ... One or more variables to be tabulated.
+#' @param data An optional data frame containing the variables.
+#' @param func_name Character string. Name of the calling function (for error messages).
+#'   Default is "table2".
+#' @param data_name Character string. Name of the data argument (for error messages).
+#'   If NULL, will attempt to infer from the call.
+#'
+#' @return A list containing:
+#' \itemize{
+#'   \item \code{dots}: List of evaluated variables (ready for base::table)
+#'   \item \code{dot_expressions}: List of expressions (for variable name extraction)
+#'   \item \code{data_name}: Name of data argument (for error messages)
+#' }
+#'
+#' @keywords internal
+validate_table2 <- function(..., data = NULL, func_name = "table2", data_name = NULL) {
+  # Capture data name for error messages
+  # If data_name not provided, try to infer it from the call
+  if (is.null(data_name)) {
+    # Try to get it from parent frame (the calling function)
+    parent_call <- sys.call(-1)
+    if (!is.null(parent_call)) {
+      parent_mc <- match.call(definition = sys.function(-1), call = parent_call)
+      if ("data" %in% names(parent_mc)) {
+        data_expr <- parent_mc$data
+        if (!is.null(data_expr)) {
+          data_name <- deparse(data_expr)
+          # Remove quotes if present
+          data_name <- gsub('^"|"$', '', data_name)
+        }
+      }
+    }
+    # Fallback to "data" if we couldn't determine it
+    if (is.null(data_name)) {
+      data_name <- "data"
+    }
+  }
+  
+  # Handle data argument and capture expressions
+  # If data is provided, evaluate unquoted variable names in the data context
+  if (!is.null(data)) {
+    if (!is.data.frame(data)) {
+      stop(sprintf("%s(): 'data' must be a data frame", func_name), call. = FALSE)
+    }
+    
+    # Capture expressions before evaluation
+    dot_expressions <- as.list(substitute(list(...)))[-1L]
+    
+    # Evaluate each expression in the data context
+    dots_list <- lapply(dot_expressions, function(expr) {
+      # Check if it's a symbol (unquoted variable name)
+      if (is.symbol(expr) || is.name(expr)) {
+        var_name <- as.character(expr)
+        if (var_name %in% names(data)) {
+          return(data[[var_name]])
+        } else {
+          stop(sprintf("%s(): Column '%s' not found in dataset '%s'", func_name, var_name, data_name), call. = FALSE)
+        }
+      } else {
+        # It's an expression (like df$var), evaluate it with data in context
+        tryCatch({
+          return(eval(expr, envir = data, enclos = parent.frame()))
+        }, error = function(e) {
+          # Try to extract variable name from expression for better error message
+          var_name <- tryCatch({
+            if (is.call(expr) && length(expr) >= 3) {
+              op <- expr[[1]]
+              if (identical(op, quote(`$`)) || identical(op, as.name("$"))) {
+                as.character(expr[[3]])
+              } else {
+                deparse(expr)
+              }
+            } else {
+              deparse(expr)
+            }
+          }, error = function(e2) "variable")
+          stop(sprintf("%s(): Could not evaluate '%s' in dataset '%s': %s", func_name, var_name, data_name, e$message), call. = FALSE)
+        })
+      }
+    })
+    
+    # Convert to list for base::table
+    dots <- dots_list
+  } else {
+    # No data argument: use dots as-is
+    dots <- list(...)
+    dot_expressions <- as.list(substitute(list(...)))[-1L]
+  }
+  
+  # Validate that all variables have the same length
+  if (length(dots) > 1) {
+    lengths <- sapply(dots, length)
+    if (length(unique(lengths)) > 1) {
+      length_str <- paste(sprintf("%d", lengths), collapse = ", ")
+      stop(sprintf("%s(): All variables must have the same length. Lengths: %s", func_name, length_str), call. = FALSE)
+    }
+  }
+  
+  # Return validated inputs
+  list(
+    dots = dots,
+    dot_expressions = dot_expressions,
+    data_name = data_name
+  )
+}
+

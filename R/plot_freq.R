@@ -76,6 +76,10 @@ plot_freq <- function(formula, data=NULL, freq=TRUE, col='dodgerblue', lwd=9, wi
     } else {
       deparse(substitute(formula))
     }
+    # Collapse to single string if deparse returned multiple strings
+    actual_name <- paste(actual_name, collapse = "")
+    # Ensure it's a single character string
+    actual_name <- as.character(actual_name)[1]
     # Remove quotes if present
     actual_name <- gsub('^"|"$', '', actual_name)
     
@@ -106,7 +110,10 @@ plot_freq <- function(formula, data=NULL, freq=TRUE, col='dodgerblue', lwd=9, wi
       # No data - pass it to validation (will evaluate from environment)
       validated <- validate_plot(formula, NULL, data, func_name = "plot_freq", require_group = FALSE, data_name = data_name)
       # Override the name if it got "formula" instead of the actual variable name
-      if (validated$y_name_raw == "formula") {
+      # Only override if actual_name looks like a valid variable name (not a deparsed vector)
+      if (validated$y_name_raw == "formula" && 
+          nchar(actual_name) < 100 && 
+          !grepl("^c\\(|^structure\\(|^list\\(", actual_name)) {
         validated$y_name_raw <- actual_name
         validated$y_name <- if (grepl("\\$", actual_name)) {
           strsplit(actual_name, "\\$")[[1]][length(strsplit(actual_name, "\\$")[[1]])]
