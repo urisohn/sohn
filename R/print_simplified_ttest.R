@@ -61,15 +61,15 @@ print.simplified_ttest <- function(x, ...) {
           }
         } else {
           # Show "When cond==0" format
-          cat("   When ", x$group_var_name, "==", g1, ": ", 
+          cat("   When ", x$group_var_name, " == ", g1, ": ", 
               format(round(mean1, digits), nsmall = digits), "\n", sep = "")
-          cat("   When ", x$group_var_name, "==", g2, ": ", 
+          cat("   When ", x$group_var_name, " == ", g2, ": ", 
               format(round(mean2, digits), nsmall = digits), "\n", sep = "")
           
           # Show difference
           if (!is.null(x$diff)) {
-            cat("   Diff: (", x$group_var_name, "==", g1, 
-                ") - (", x$group_var_name, "==", g2, 
+            cat("   Diff: (", x$group_var_name, " == ", g1, 
+                ") - (", x$group_var_name, " == ", g2, 
                 ") = ", format(round(x$diff, digits), nsmall = digits), "\n", sep = "")
             # Show SE(Diff) if available
             if (!is.null(x$se_diff) && !is.na(x$se_diff)) {
@@ -101,7 +101,7 @@ print.simplified_ttest <- function(x, ...) {
     
     # Confidence interval for difference
     if (!is.null(x$conf.int)) {
-      conf_level <- round(100 * attr(x$conf.int, "conf.level"))
+      conf_level <- format(100 * attr(x$conf.int, "conf.level"), nsmall = 1)
       cat("   ", conf_level, "% CI for difference = [", 
           format(round(x$conf.int[1], digits), nsmall = digits), ", ", 
           format(round(x$conf.int[2], digits), nsmall = digits), "]\n", sep = "")
@@ -121,7 +121,7 @@ print.simplified_ttest <- function(x, ...) {
       
       # Confidence interval for difference
       if (!is.null(x$conf.int)) {
-        conf_level <- round(100 * attr(x$conf.int, "conf.level"))
+        conf_level <- format(100 * attr(x$conf.int, "conf.level"), nsmall = 1)
         cat("   ", conf_level, "% CI = [", 
             format(round(x$conf.int[1], digits), nsmall = digits), ", ", 
             format(round(x$conf.int[2], digits), nsmall = digits), "]\n", sep = "")
@@ -130,7 +130,7 @@ print.simplified_ttest <- function(x, ...) {
       # One-sample test
       cat("   ", x$x.name, ": ", format(round(x$estimate, digits), nsmall = digits), "\n", sep = "")
       if (!is.null(x$conf.int)) {
-        conf_level <- round(100 * attr(x$conf.int, "conf.level"))
+        conf_level <- format(100 * attr(x$conf.int, "conf.level"), nsmall = 1)
         cat("   ", conf_level, "% CI for ", x$x.name, " = [", 
             format(round(x$conf.int[1], digits), nsmall = digits), ", ", 
             format(round(x$conf.int[2], digits), nsmall = digits), "]\n", sep = "")
@@ -140,29 +140,19 @@ print.simplified_ttest <- function(x, ...) {
   
   # Test results section
   cat("\n", test_type, " (", alternative_text, ")\n", sep = "")
-  cat("   t=", format(x$statistic, digits = 4), "\n", sep = "")
-  cat("   df=", format(x$parameter, digits = 4), "\n", sep = "")
-  # Show formatted p-value and raw p-value (only if p < 0.001)
-  if (!is.na(x$p.value) && x$p.value < 0.001) {
+  cat("   t = ", format(x$statistic, digits = 4), "\n", sep = "")
+  cat("   df = ", format(x$parameter, digits = 4), "\n", sep = "")
+  # Always use format_pvalue() for p-value display
+  if (!is.na(x$p.value)) {
     formatted_p <- format_pvalue(x$p.value, include_p = TRUE)
-    # Format raw p-value: always use scientific notation
-    raw_p_str <- format(x$p.value, scientific = TRUE, digits = 4)
-    # Remove leading zero from scientific notation (e.g., "3.400e-15" stays as is, "0.3019e-08" becomes "3.019e-09")
-    # Actually, format() with scientific=TRUE already handles this correctly
-    cat("   ", formatted_p, "\n   (precise p=", raw_p_str, ")\n", sep = "")
-  } else {
-    # For p >= 0.001, just show raw p-value
-    if (!is.na(x$p.value)) {
-      raw_p_str <- sprintf("%.6f", x$p.value)
-      # Remove trailing zeros
-      raw_p_str <- sub("0+$", "", raw_p_str)
-      raw_p_str <- sub("\\.$", "", raw_p_str)
-      # Remove leading zero
-      raw_p_str <- sub("^0\\.", ".", raw_p_str)
-      cat("   p-value=", raw_p_str, "\n", sep = "")
-    } else {
-      cat("   p-value=NA\n", sep = "")
+    cat("   ", formatted_p, "\n", sep = "")
+    # If p < 0.0001, show precise p-value in scientific notation
+    if (x$p.value < 0.0001) {
+      raw_p_str <- format(x$p.value, scientific = TRUE, digits = 4)
+      cat("   (precise p: ", raw_p_str, ")\n", sep = "")
     }
+  } else {
+    cat("   p-value = NA\n", sep = "")
   }
   
   invisible(x)
