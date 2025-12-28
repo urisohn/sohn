@@ -1,105 +1,3 @@
-# Internal helper function to simplify t-test output for printing
-# This function is used internally by t.test2() to format console output
-simplify_ttest <- function(object, digits = 3, calling_env = NULL, ...) {
-  if (!inherits(object, "htest")) {
-    stop("object must be of class 'htest'")
-  }
-  
-  if (!grepl("t-test", object$method, ignore.case = TRUE)) {
-    stop("simplify_ttest() only works with t.test() output")
-  }
-  
-  # Parse data.name to extract variable names
-  data_name <- object$data.name
-  
-  # Check if it's formula syntax (contains "by" or "~")
-  is_formula <- grepl(" by | ~ ", data_name)
-  
-  if (is_formula) {
-    # Formula syntax: "y by group" or "y ~ group"
-    # Split on " by " or " ~ "
-    parts <- strsplit(data_name, " by | ~ ")[[1]]
-    if (length(parts) == 2) {
-      y_var_name <- trimws(parts[1])
-      group_var_name <- trimws(parts[2])
-      
-      object$y_var_name <- y_var_name
-      object$group_var_name <- group_var_name
-      object$is_formula <- TRUE
-      
-      # Try to get original data from the environment
-      if (is.null(calling_env)) {
-        env <- tryCatch(parent.frame(), error = function(e) .GlobalEnv)
-      } else {
-        env <- calling_env
-      }
-      
-      # Check if variables are already provided (from t.test2)
-      if (!is.null(object$y_var) && !is.null(object$group_var)) {
-        # Variables already provided, use them
-        # (y_var and group_var are already set)
-      } else {
-        # Try to get variables from the environment
-        tryCatch({
-          # Try to get variables from the environment
-          y_var <- tryCatch(get(y_var_name, envir = env), error = function(e) NULL)
-          group_var <- tryCatch(get(group_var_name, envir = env), error = function(e) NULL)
-          
-          # If we got both variables and they have the same length, store them
-          if (!is.null(y_var) && !is.null(group_var) && 
-              length(y_var) > 0 && length(group_var) > 0 && 
-              length(y_var) == length(group_var)) {
-            object$y_var <- y_var
-            object$group_var <- group_var
-          } else {
-            object$y_var <- NULL
-            object$group_var <- NULL
-          }
-        }, error = function(e) {
-          object$y_var <- NULL
-          object$group_var <- NULL
-        })
-      }
-      
-      # Calculate difference
-      if (length(object$estimate) == 2) {
-        object$diff <- object$estimate[1] - object$estimate[2]
-      }
-    }
-  } else {
-    # Standard syntax: "x and y" or just "x"
-    if (grepl(" and ", data_name)) {
-      parts <- strsplit(data_name, " and ")[[1]]
-      x_name <- trimws(parts[1])
-      y_name <- trimws(parts[2])
-      object$x.name <- x_name
-      object$y.name <- y_name
-      object$is_formula <- FALSE
-      
-      if (length(object$estimate) == 2) {
-        object$diff <- object$estimate[1] - object$estimate[2]
-      }
-    } else {
-      # One-sample test
-      object$x.name <- trimws(data_name)
-      object$y.name <- NULL
-      object$is_formula <- FALSE
-      object$diff <- NULL
-    }
-  }
-  
-  # Store digits
-  object$digits <- digits
-  
-  # Change class to use our print method
-  class(object) <- c("simplified_ttest", class(object))
-  
-  # Print the enhanced output
-  print(object)
-  
-  invisible(object)
-}
-
 #' Enhanced t-test function
 #'
 #' Runs \code{\link[stats]{t.test}} and returns results as a dataframe
@@ -224,10 +122,13 @@ t.test2 <- function(..., digits = 3) {
   # TASK 3: Extract test results: means, test statistics, and method type
   # Determine test type (Student vs Welch) from method string
     is_welch <- grepl("Welch", tt_result$method, ignore.case = TRUE)
+    is_paired <- grepl("Paired", tt_result$method, ignore.case = TRUE)
     method_type <- if (is_welch) "welch" else "student"
   
   # Extract means (remove names to get plain numeric values)
   # tt_result$estimate is a named vector, so convert to numeric to remove names
+  # For paired tests, estimate only contains the mean difference, not both means
+  # We'll calculate the individual means from the data later if needed
     mean1 <- if (length(tt_result$estimate) >= 1) as.numeric(tt_result$estimate[1]) else NA_real_
     mean2 <- if (length(tt_result$estimate) >= 2) as.numeric(tt_result$estimate[2]) else NA_real_
   
@@ -249,7 +150,7 @@ t.test2 <- function(..., digits = 3) {
     conf_intH <- if (!is.null(conf_int) && length(conf_int) >= 2) as.numeric(conf_int[2]) else NA_real_
   # Extract confidence level (e.g., 0.95 for 95% CI)
     conf_level <- if (!is.null(conf_int)) attr(conf_int, "conf.level") else NA_real_
-    level <- if (!is.na(conf_level)) 100 * conf_level else NA_real_
+    level <- if (!is.na(conf_level)) paste0(100 * conf_level, "%") else NA_character_
   
   # TASK 4: EXTRACT COLUMN NAMES - Determine column names from variable names or group values
   # Initialize column names with defaults (will be overwritten if we can extract names)
@@ -275,12 +176,14 @@ t.test2 <- function(..., digits = 3) {
   }
   
   # TASK 5: CALCULATE STANDARD ERRORS - Extract original data to compute standard errors
-  # Variables to pass to simplify_ttest for display
-  extracted_y_var <- NULL
-  extracted_group_var <- NULL
   # Variables for paired tests
   x_arg <- NULL
   y_arg <- NULL
+  # Variables to store N (non-NA counts)
+  N1 <- NA_integer_
+  N2 <- NA_integer_
+  # Variable to store correlation
+  corr_value <- NA_real_
   
   # Try to extract data from the call for standard error calculation
   tryCatch({
@@ -289,10 +192,6 @@ t.test2 <- function(..., digits = 3) {
       # Use the variables we already extracted
       y_var <- y_var_for_formula
       group_var <- group_var_for_formula
-      
-      # Store extracted variables for simplify_ttest
-      extracted_y_var <- y_var
-      extracted_group_var <- group_var
       
       # Calculate standard errors for each group and get group values for column names
       unique_groups <- sort(unique(group_var))
@@ -303,6 +202,10 @@ t.test2 <- function(..., digits = 3) {
         # TASK 5: Calculate standard errors (sd / sqrt(n))
         se1 <- sd(g1_data, na.rm = TRUE) / sqrt(length(g1_data))
         se2 <- sd(g2_data, na.rm = TRUE) / sqrt(length(g2_data))
+        
+        # Calculate N (non-NA counts)
+        N1 <- sum(!is.na(g1_data))
+        N2 <- sum(!is.na(g2_data))
         
         # TASK 4: Use group values as column names (e.g., "a", "b")
         col1_name <- as.character(unique_groups[1])
@@ -327,10 +230,6 @@ t.test2 <- function(..., digits = 3) {
         group_var <- eval(formula[[3]], envir = calling_env)
       }
       
-      # Store extracted variables for simplify_ttest
-      extracted_y_var <- y_var
-      extracted_group_var <- group_var
-      
       # Calculate standard errors for each group and get group values for column names
       unique_groups <- sort(unique(group_var))
       if (length(unique_groups) == 2) {
@@ -340,6 +239,10 @@ t.test2 <- function(..., digits = 3) {
         # TASK 5: Calculate standard errors (sd / sqrt(n))
         se1 <- sd(g1_data, na.rm = TRUE) / sqrt(length(g1_data))
         se2 <- sd(g2_data, na.rm = TRUE) / sqrt(length(g2_data))
+        
+        # Calculate N (non-NA counts)
+        N1 <- sum(!is.na(g1_data))
+        N2 <- sum(!is.na(g2_data))
         
         # TASK 4: Use group values as column names (e.g., "a", "b")
         col1_name <- as.character(unique_groups[1])
@@ -398,12 +301,54 @@ t.test2 <- function(..., digits = 3) {
       }
       
       # TASK 5: Calculate standard errors (sd / sqrt(n))
+      # Also calculate means from original data (important for paired tests where estimate only has diff)
+      # For paired tests, remove pairs where either value is missing
+      if (is_paired && !is.null(x_arg) && !is.null(y_arg) && 
+          is.numeric(x_arg) && is.numeric(y_arg) &&
+          length(x_arg) == length(y_arg)) {
+        # Find complete cases (both values present)
+        complete <- complete.cases(x_arg, y_arg)
+        n_dropped <- sum(!complete)
+        
+        # Report dropped observations
+        if (n_dropped > 0) {
+          message2(paste0("Dropped ", n_dropped, " observation(s) with missing values in paired t-test"), col = "red")
+        }
+        
+        # Use only complete cases for paired tests
+        x_arg <- x_arg[complete]
+        y_arg <- y_arg[complete]
+      }
+      
       if (!is.null(x_arg) && is.numeric(x_arg)) {
         se1 <- sd(x_arg, na.rm = TRUE) / sqrt(length(x_arg))
+        N1 <- sum(!is.na(x_arg))
+        # Calculate mean from data (for paired tests, estimate only has mean difference)
+        mean1 <- mean(x_arg, na.rm = TRUE)
       }
       
       if (!is.null(y_arg) && is.numeric(y_arg)) {
         se2 <- sd(y_arg, na.rm = TRUE) / sqrt(length(y_arg))
+        N2 <- sum(!is.na(y_arg))
+        # Calculate mean from data (for paired tests, estimate only has mean difference)
+        mean2 <- mean(y_arg, na.rm = TRUE)
+      }
+      
+      # Calculate correlation between x and y (only for paired tests)
+      if (is_paired && !is.null(x_arg) && !is.null(y_arg) && 
+          is.numeric(x_arg) && is.numeric(y_arg) &&
+          length(x_arg) == length(y_arg) && length(x_arg) > 1) {
+        # For paired tests, x_arg and y_arg are already cleaned of missing values
+        corr_value <- cor(x_arg, y_arg)
+      }
+      
+      # Recalculate diff from the means we just calculated
+      if (!is.na(mean1) && !is.na(mean2)) {
+        diff <- mean1 - mean2
+        # Recalculate SE(diff) after recalculating diff (important for paired tests)
+        if (!is.na(diff) && !is.na(t_stat) && t_stat != 0) {
+          se_diff <- abs(diff / t_stat)
+        }
       }
     }
   }, error = function(e) {
@@ -412,29 +357,7 @@ t.test2 <- function(..., digits = 3) {
     # This can happen in some edge cases
   })
   
-  # TASK 6: DISPLAY OUTPUT - Print simplified t-test results
-  # Use simplify_ttest helper function to print console output
-  # Pass the calling environment and extracted variables so simplify_ttest can display means
-  # Add flag to show simple group names (just "a" instead of "When by==a")
-  # tt_result$show_simple_groups <- TRUE
-  # # Pass extracted variables directly if we have them (handles df$var syntax)
-  # if (!is.null(extracted_y_var) && !is.null(extracted_group_var)) {
-  #   tt_result$y_var <- extracted_y_var
-  #   tt_result$group_var <- extracted_group_var
-  # }
-  # # Pass original data for all two-sample tests (paired and unpaired) if available
-  # # This allows the print function to check for missing values
-  # is_paired <- grepl("Paired", tt_result$method, ignore.case = TRUE)
-  # if (!is.null(x_arg) && !is.null(y_arg)) {
-  #   # For all two-sample tests, pass the original x and y vectors
-  #   tt_result$x_var <- x_arg
-  #   tt_result$y_var <- y_arg
-  # }
-  # # Pass se_diff for console display
-  # tt_result$se_diff <- se_diff
-  # simplify_ttest(tt_result, digits = digits, calling_env = calling_env)
-  
-  # TASK 7: BUILD DATAFRAME - Create dataframe with dynamic column names based on variables/groups
+  # TASK 6: BUILD DATAFRAME - Create dataframe with dynamic column names based on variables/groups
   # Build a list first, then convert to dataframe (creates 1-row dataframe automatically)
   result_list <- list()
   
@@ -442,6 +365,10 @@ t.test2 <- function(..., digits = 3) {
   result_list[[col1_name]] <- mean1
   if (!is.na(mean2)) {
     result_list[[col2_name]] <- mean2
+    # Add correlation column after group2 (only for paired tests)
+    if (is_paired) {
+      result_list$corr <- corr_value
+    }
   }
   
   # Add difference column with dynamic name (var1-var2 format)
@@ -450,31 +377,43 @@ t.test2 <- function(..., digits = 3) {
     # Use "-" directly (not " - ") and check.names=FALSE will preserve it
     diff_col_name <- paste0(col1_name, "-", col2_name)
     result_list[[diff_col_name]] <- diff
-    # Add SE(diff) column right after diff
-    se_diff_col_name <- paste0("SE_", col1_name, "-", col2_name)
-    result_list[[se_diff_col_name]] <- se_diff
-    # Add confidence interval columns after SE(diff)
-    result_list$conf.intL <- conf_intL
-    result_list$conf.intH <- conf_intH
-    result_list$level <- level
+    # Add confidence interval columns after diff
+    result_list$ci.L <- conf_intL
+    result_list$ci.H <- conf_intH
+    result_list$ci.level <- level
   } else {
     # For one-sample test, diff is NA, so use default name
     result_list$diff <- diff
     # Add confidence interval columns for one-sample test as well
-    result_list$conf.intL <- conf_intL
-    result_list$conf.intH <- conf_intH
-    result_list$level <- level
+    result_list$ci.L <- conf_intL
+    result_list$ci.H <- conf_intH
+    result_list$ci.level <- level
   }
   
   # Add other test statistics columns
   result_list$t <- t_stat
   result_list$df <- df
   result_list$p.value <- p_value
+  # Add N columns right after p.value
+  # Check if we're using formula syntax by checking data.name
+  is_formula_syntax <- grepl(" by | ~ ", tt_result$data.name, ignore.case = TRUE)
+  if (!is.na(mean2)) {
+    # Two-sample test - use group values for formula syntax, variable names for standard syntax
+    # For formula syntax, col1_name and col2_name already contain the group values (e.g., "A", "B")
+    result_list[[paste0("N_", col1_name)]] <- N1
+    result_list[[paste0("N_", col2_name)]] <- N2
+  } else {
+    # One-sample test
+    result_list[[paste0("N_", col1_name)]] <- N1
+  }
   result_list$method <- method_type
   # Use variable names for SE columns (e.g., se_wannda, se_yolannda)
   result_list[[paste0("se_", col1_name)]] <- se1
   if (!is.na(mean2)) {
     result_list[[paste0("se_", col2_name)]] <- se2
+    # Add SE(diff) column at the end, after SE columns
+    se_diff_col_name <- paste0("SE_", col1_name, "-", col2_name)
+    result_list[[se_diff_col_name]] <- se_diff
   }
   
   # Convert list to dataframe (creates a 1-row dataframe)
@@ -482,23 +421,109 @@ t.test2 <- function(..., digits = 3) {
   result_df <- as.data.frame(result_list, stringsAsFactors = FALSE, check.names = FALSE)
   
   # TASK 8: Display dataframe on console with formatting
-  # Create a copy for display: round all numeric columns to 3 decimals except p.value
+  # Create a copy for display
   display_df <- result_df
-  for (col in names(display_df)) {
-    if (col != "p.value" && is.numeric(display_df[[col]])) {
-      display_df[[col]] <- round(display_df[[col]], 3)
+  
+  # Check if group names are too long (>= 5 characters) and replace with "Group 1" and "Group 2"
+  if (!is.na(mean2) && nchar(col1_name) >= 5 && nchar(col2_name) >= 5) {
+    # Store original names for message
+    orig_col1 <- col1_name
+    orig_col2 <- col2_name
+    
+    # Create mapping for column name replacements
+    col_mapping <- list()
+    col_mapping[[col1_name]] <- "Group 1"
+    col_mapping[[col2_name]] <- "Group 2"
+    col_mapping[[paste0("N_", col1_name)]] <- "N1"
+    col_mapping[[paste0("N_", col2_name)]] <- "N2"
+    col_mapping[[paste0("se_", col1_name)]] <- "SE1"
+    col_mapping[[paste0("se_", col2_name)]] <- "SE2"
+    col_mapping[[paste0(col1_name, "-", col2_name)]] <- "1-2"
+    col_mapping[[paste0("SE_", col1_name, "-", col2_name)]] <- "SE(1-2)"
+    
+    # Rename columns in display_df
+    new_names <- names(display_df)
+    for (i in seq_along(new_names)) {
+      if (new_names[i] %in% names(col_mapping)) {
+        new_names[i] <- col_mapping[[new_names[i]]]
+      }
+    }
+    names(display_df) <- new_names
+    
+    # Display mapping message
+    message2(paste0("Group 1: ", orig_col1), col = "blue")
+    message2(paste0("Group 2: ", orig_col2), col = "blue")
+  }
+  
+  # Helper function to format values based on size
+  format_value <- function(val, is_df = FALSE) {
+    if (is.na(val) || !is.numeric(val)) {
+      return(val)
+    }
+    if (is_df) {
+      # df always has 1 decimal
+      return(round(val, 1))
+    }
+    # For means, CIs, SEs: >100 = 1 decimal, >10 = 2 decimals, else 3 decimals
+    abs_val <- abs(val)
+    if (abs_val > 100) {
+      return(round(val, 1))
+    } else if (abs_val > 10) {
+      return(round(val, 2))
+    } else {
+      return(round(val, 3))
     }
   }
-  # Format p-value using format_pvalue
-  if ("p.value" %in% names(display_df) && !is.na(display_df$p.value)) {
-    formatted_p <- format_pvalue(display_df$p.value, include_p = FALSE)
-    # Remove "= " and trim spaces after "<" and ">"
-    formatted_p <- gsub("= ", "", formatted_p)
-    formatted_p <- gsub("< ", "<", formatted_p)
-    formatted_p <- gsub("> ", ">", formatted_p)
-    display_df$p.value <- formatted_p
+  
+  # Format each column based on type
+  for (col in names(display_df)) {
+    if (col == "p.value") {
+      # Format p-value using format_pvalue
+      if (!is.na(display_df$p.value) && is.numeric(result_df$p.value)) {
+        formatted_p <- format_pvalue(display_df$p.value, include_p = FALSE)
+        # Remove "= " and trim spaces after "<" and ">"
+        formatted_p <- gsub("= ", "", formatted_p)
+        formatted_p <- gsub("< ", "<", formatted_p)
+        formatted_p <- gsub("> ", ">", formatted_p)
+        display_df$p.value <- formatted_p
+      }
+    } else if (col == "df") {
+      # df always has 1 decimal
+      if (is.numeric(display_df[[col]])) {
+        display_df[[col]] <- format_value(display_df[[col]], is_df = TRUE)
+      }
+    } else if (grepl("^N_", col)) {
+      # N columns are integers, no decimals needed
+      if (is.numeric(display_df[[col]])) {
+        display_df[[col]] <- round(display_df[[col]], 0)
+      }
+    } else if (col == "method" || col == "ci.level") {
+      # Character columns, no formatting
+      next
+    } else if (is.numeric(display_df[[col]])) {
+      # Means, CIs, SEs: apply value-based formatting
+      display_df[[col]] <- format_value(display_df[[col]])
+    }
   }
-  print(display_df)
+  
+  # Remove last 4 columns from console output: method and the 3 SE columns
+  cols_to_remove <- c("method")
+  # Find SE columns to remove (check both original names and potentially renamed ones)
+  se_cols_to_check <- c(
+    paste0("se_", col1_name),
+    paste0("se_", col2_name),
+    paste0("SE_", col1_name, "-", col2_name),
+    "SE1", "SE2", "SE(1-2)"  # In case names were replaced
+  )
+  for (col in se_cols_to_check) {
+    if (col %in% names(display_df)) {
+      cols_to_remove <- c(cols_to_remove, col)
+    }
+  }
+  # Remove columns from display_df
+  display_df <- display_df[, !names(display_df) %in% cols_to_remove, drop = FALSE]
+  
+  print(display_df, row.names = FALSE)
   
   # Return dataframe invisibly (original, unrounded values)
   return(invisible(result_df))
