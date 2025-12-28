@@ -208,7 +208,7 @@ desc_var(score, condition, data = df, decimals = 2)
 
 # Formula syntax
 	data <- data.frame(y = rnorm(100), group = rep(c("A", "B"), 50))
-	t2 = t.test2(y ~ group, data = data)  # Columns: A, B, A-B, SE_A-B, conf.intL, conf.intH, t, df, p.value, method, se_A, se_B
+	t2 = t.test2(y ~ group, data = data)  # Columns: A, B, A-B, SE_A-B, conf.intL, conf.intH, level, t, df, p.value, method, se_A, se_B
 	t2
 
 # Formula syntax without data argument

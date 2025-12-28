@@ -109,7 +109,7 @@ simplify_ttest <- function(object, digits = 3, calling_env = NULL, ...) {
 #' @param digits Number of decimal places to display. Default is 3.
 #'
 #' @return A dataframe (returned invisibly) with columns named after the variables
-#'   or group values, plus: diff, SE_diff, conf.intL, conf.intH, t, df, p.value, se1, se2, method
+#'   or group values, plus: diff, SE_diff, conf.intL, conf.intH, level, t, df, p.value, se1, se2, method
 #'
 #' @details
 #' This function:
@@ -129,6 +129,7 @@ simplify_ttest <- function(object, digits = 3, calling_env = NULL, ...) {
 #'   \item SE_diff: Standard error of the difference of means (NA for one-sample test)
 #'   \item conf.intL: Lower bound of confidence interval
 #'   \item conf.intH: Upper bound of confidence interval
+#'   \item level: Confidence level of the confidence interval (e.g., 95 for 95\%)
 #'   \item t: t-statistic
 #'   \item df: Degrees of freedom
 #'   \item p.value: p-value
@@ -246,6 +247,9 @@ t.test2 <- function(..., digits = 3) {
     conf_int <- tt_result$conf.int
     conf_intL <- if (!is.null(conf_int) && length(conf_int) >= 1) as.numeric(conf_int[1]) else NA_real_
     conf_intH <- if (!is.null(conf_int) && length(conf_int) >= 2) as.numeric(conf_int[2]) else NA_real_
+  # Extract confidence level (e.g., 0.95 for 95% CI)
+    conf_level <- if (!is.null(conf_int)) attr(conf_int, "conf.level") else NA_real_
+    level <- if (!is.na(conf_level)) 100 * conf_level else NA_real_
   
   # TASK 4: EXTRACT COLUMN NAMES - Determine column names from variable names or group values
   # Initialize column names with defaults (will be overwritten if we can extract names)
@@ -412,23 +416,23 @@ t.test2 <- function(..., digits = 3) {
   # Use simplify_ttest helper function to print console output
   # Pass the calling environment and extracted variables so simplify_ttest can display means
   # Add flag to show simple group names (just "a" instead of "When by==a")
-  tt_result$show_simple_groups <- TRUE
-  # Pass extracted variables directly if we have them (handles df$var syntax)
-  if (!is.null(extracted_y_var) && !is.null(extracted_group_var)) {
-    tt_result$y_var <- extracted_y_var
-    tt_result$group_var <- extracted_group_var
-  }
-  # Pass original data for all two-sample tests (paired and unpaired) if available
-  # This allows the print function to check for missing values
-  is_paired <- grepl("Paired", tt_result$method, ignore.case = TRUE)
-  if (!is.null(x_arg) && !is.null(y_arg)) {
-    # For all two-sample tests, pass the original x and y vectors
-    tt_result$x_var <- x_arg
-    tt_result$y_var <- y_arg
-  }
-  # Pass se_diff for console display
-  tt_result$se_diff <- se_diff
-  simplify_ttest(tt_result, digits = digits, calling_env = calling_env)
+  # tt_result$show_simple_groups <- TRUE
+  # # Pass extracted variables directly if we have them (handles df$var syntax)
+  # if (!is.null(extracted_y_var) && !is.null(extracted_group_var)) {
+  #   tt_result$y_var <- extracted_y_var
+  #   tt_result$group_var <- extracted_group_var
+  # }
+  # # Pass original data for all two-sample tests (paired and unpaired) if available
+  # # This allows the print function to check for missing values
+  # is_paired <- grepl("Paired", tt_result$method, ignore.case = TRUE)
+  # if (!is.null(x_arg) && !is.null(y_arg)) {
+  #   # For all two-sample tests, pass the original x and y vectors
+  #   tt_result$x_var <- x_arg
+  #   tt_result$y_var <- y_arg
+  # }
+  # # Pass se_diff for console display
+  # tt_result$se_diff <- se_diff
+  # simplify_ttest(tt_result, digits = digits, calling_env = calling_env)
   
   # TASK 7: BUILD DATAFRAME - Create dataframe with dynamic column names based on variables/groups
   # Build a list first, then convert to dataframe (creates 1-row dataframe automatically)
@@ -452,12 +456,14 @@ t.test2 <- function(..., digits = 3) {
     # Add confidence interval columns after SE(diff)
     result_list$conf.intL <- conf_intL
     result_list$conf.intH <- conf_intH
+    result_list$level <- level
   } else {
     # For one-sample test, diff is NA, so use default name
     result_list$diff <- diff
     # Add confidence interval columns for one-sample test as well
     result_list$conf.intL <- conf_intL
     result_list$conf.intH <- conf_intH
+    result_list$level <- level
   }
   
   # Add other test statistics columns
@@ -475,7 +481,26 @@ t.test2 <- function(..., digits = 3) {
   # Use check.names = FALSE to preserve column names with special characters like "-"
   result_df <- as.data.frame(result_list, stringsAsFactors = FALSE, check.names = FALSE)
   
-  # TASK 8: Return dataframe invisibly (only console output is visible)
+  # TASK 8: Display dataframe on console with formatting
+  # Create a copy for display: round all numeric columns to 3 decimals except p.value
+  display_df <- result_df
+  for (col in names(display_df)) {
+    if (col != "p.value" && is.numeric(display_df[[col]])) {
+      display_df[[col]] <- round(display_df[[col]], 3)
+    }
+  }
+  # Format p-value using format_pvalue
+  if ("p.value" %in% names(display_df) && !is.na(display_df$p.value)) {
+    formatted_p <- format_pvalue(display_df$p.value, include_p = FALSE)
+    # Remove "= " and trim spaces after "<" and ">"
+    formatted_p <- gsub("= ", "", formatted_p)
+    formatted_p <- gsub("< ", "<", formatted_p)
+    formatted_p <- gsub("> ", ">", formatted_p)
+    display_df$p.value <- formatted_p
+  }
+  print(display_df)
+  
+  # Return dataframe invisibly (original, unrounded values)
   return(invisible(result_df))
 }
 
