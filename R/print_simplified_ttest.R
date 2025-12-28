@@ -60,8 +60,8 @@ print.simplified_ttest <- function(x, quiet = FALSE, ...) {
       
       # Build consolidated message: "note: col1_name is missing k1 out of N1 values, col2_name k2 out of N2 values"
       if (!is.na(total_1) && !is.na(total_2)) {
-        message2(paste0("note: ", col1_name, " is missing ", n_missing_1, " out of ", total_1, 
-                       " values, ", col2_name, " ", n_missing_2, " out of ", total_2, " values"), col = "red")
+        message2(paste0("note: ", col1_name, " is missing ", n_missing_1, " of ", total_1, 
+                       " values, ", col2_name, " ", n_missing_2, " of ", total_2), col = "red4")
       } else {
         # Fallback if totals can't be calculated
         msg <- paste0("note: ", col1_name)
