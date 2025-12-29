@@ -48,8 +48,15 @@
 #' @export
 t.test2 <- function(...) {
   
-  # Run t.test with provided arguments
-  tt_result <- stats::t.test(...)
+  # Get arguments and filter out digits (not a parameter for stats::t.test)
+  dots_list <- list(...)
+  # Remove digits if present (it's not a parameter for stats::t.test)
+  if ("digits" %in% names(dots_list)) {
+    dots_list <- dots_list[names(dots_list) != "digits"]
+  }
+  
+  # Run t.test with provided arguments (excluding digits)
+  tt_result <- do.call(stats::t.test, dots_list)
   
   # Determine test type
   is_paired <- grepl("Paired", tt_result$method, ignore.case = TRUE)
