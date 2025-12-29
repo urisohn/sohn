@@ -1,53 +1,3 @@
-test_that("print.t.test2 runs without errors", {
-  # Create a t-test result
-  y <- rnorm(100)
-  group <- rep(c("A", "B"), 50)
-  tt_result <- t.test(y ~ group)
-  
-  # Add required fields for t.test2
-  tt_result$y_var_name <- "y"
-  tt_result$group_var_name <- "group"
-  tt_result$is_formula <- TRUE
-  tt_result$digits <- 3
-  tt_result$y_var <- y
-  tt_result$group_var <- group
-  class(tt_result) <- c("t.test2", class(tt_result))
-  
-  # Should print without errors
-  expect_error(print(tt_result), NA)
-  
-  # Should return invisibly
-  result <- print(tt_result)
-  expect_equal(result, tt_result)
-})
-
-test_that("print.t.test2 handles two-sample test", {
-  x1 <- rnorm(50, mean = 5)
-  x2 <- rnorm(50, mean = 4.8)
-  tt_result <- t.test(x1, x2)
-  
-  tt_result$x.name <- "x1"
-  tt_result$y.name <- "x2"
-  tt_result$is_formula <- FALSE
-  tt_result$digits <- 3
-  tt_result$diff <- tt_result$estimate[1] - tt_result$estimate[2]
-  class(tt_result) <- c("t.test2", class(tt_result))
-  
-  expect_error(print(tt_result), NA)
-})
-
-test_that("print.t.test2 handles one-sample test", {
-  x <- rnorm(50, mean = 5)
-  tt_result <- t.test(x, mu = 5)
-  
-  tt_result$x.name <- "x"
-  tt_result$is_formula <- FALSE
-  tt_result$digits <- 3
-  class(tt_result) <- c("t.test2", class(tt_result))
-  
-  expect_error(print(tt_result), NA)
-})
-
 test_that("print.table2 runs without errors", {
   df <- data.frame(
     group = c("A", "A", "B", "B", "A"),
@@ -95,43 +45,6 @@ test_that("print.table2 handles tables without dimension names", {
   # Should still print (may fall back to default print)
   expect_error(print(tbl), NA)
 })
-
-test_that("print.t.test2 handles small p-values", {
-  # Create test with very small p-value
-  set.seed(123)
-  x1 <- rnorm(1000, mean = 10)
-  x2 <- rnorm(1000, mean = 5)
-  tt_result <- t.test(x1, x2)
-  
-  tt_result$x.name <- "x1"
-  tt_result$y.name <- "x2"
-  tt_result$is_formula <- FALSE
-  tt_result$digits <- 3
-  tt_result$diff <- tt_result$estimate[1] - tt_result$estimate[2]
-  class(tt_result) <- c("t.test2", class(tt_result))
-  
-  # Should handle small p-values
-  expect_error(print(tt_result), NA)
-})
-
-test_that("print.t.test2 handles Welch vs Student", {
-  x1 <- rnorm(50, mean = 5, sd = 1)
-  x2 <- rnorm(50, mean = 4.8, sd = 2)  # Different SDs trigger Welch
-  
-  tt_result <- t.test(x1, x2)
-  tt_result$x.name <- "x1"
-  tt_result$y.name <- "x2"
-  tt_result$is_formula <- FALSE
-  tt_result$digits <- 3
-  tt_result$diff <- tt_result$estimate[1] - tt_result$estimate[2]
-  class(tt_result) <- c("t.test2", class(tt_result))
-  
-  expect_error(print(tt_result), NA)
-})
-
-
-
-
 
 
 

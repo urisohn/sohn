@@ -4,52 +4,49 @@
 \alias{t.test2}
 \title{Enhanced t-test function}
 \usage{
-\method{t}{test2}(..., digits = 3)
+\method{t}{test2}(...)
 }
 \arguments{
 \item{...}{Arguments passed to \code{\link[stats]{t.test}}}
-
-\item{digits}{Number of decimal places to display. Default is 3.}
 }
 \value{
-A dataframe (returned invisibly) with columns named after the variables
-  or group values, plus: diff, SE_diff, conf.intL, conf.intH, t, df, p.value, se1, se2, method
-}
-\description{
-Runs \code{\link[stats]{t.test}} and returns results as a dataframe
-while displaying simplified, readable output with variable names.
-}
-\details{
-This function:
-\itemize{
-  \item Runs \code{t.test()} with the provided arguments
-  \item Displays simplified, readable output with variable names
-  \item Returns results as a dataframe (invisibly) instead of a list
-}
-
-The dataframe contains:
+A dataframe (single row) with the following columns:
 \itemize{
   \item Variable-named columns: For standard syntax (\code{t.test2(x1, x2)}),
     columns are named after the variables (e.g., \code{x1}, \code{x2}).
     For formula syntax (\code{t.test2(y ~ group, data=df)}), columns are
-    named after the group values (e.g., \code{low}, \code{high}).
-  \item diff: Difference of means (mean1 - mean2, NA for one-sample test)
-  \item SE_diff: Standard error of the difference of means (NA for one-sample test)
-  \item conf.intL: Lower bound of confidence interval
-  \item conf.intH: Upper bound of confidence interval
-  \item t: t-statistic
-  \item df: Degrees of freedom
-  \item p.value: p-value
-  \item se1: Standard error of first group
-  \item se2: Standard error of second group (NA for one-sample test)
-  \item method: 'student' or 'welch'
+    named after the group values (e.g., \code{A}, \code{B}).
+  \item \code{diff}: Difference of means (mean1 - mean2, NA for one-sample test)
+  \item \code{ci}: Confidence level (e.g., "95%")
+  \item \code{ci.L}: Lower bound of confidence interval
+  \item \code{ci.H}: Upper bound of confidence interval
+  \item \code{t}: t-statistic
+  \item \code{df}: Degrees of freedom
+  \item \code{p.value}: p-value
+  \item \code{N1} or \code{N <group>}: Sample size of first group
+  \item \code{N2} or \code{N <group>}: Sample size of second group (NA for one-sample test)
+  \item \code{corr}: Correlation between groups (only for paired tests, NA otherwise)
 }
+}
+\description{
+Runs \code{\link[stats]{t.test}} and returns results as a dataframe
+with group names, means, differences, confidence intervals, test statistics,
+sample sizes, and correlation (for paired tests).
 }
 \examples{
 # Two-sample t-test
 men <- rnorm(100, mean = 5, sd = 1)
 women <- rnorm(100, mean = 4.8, sd = 1)
 t.test2(men, women)
+
+# Paired t-test
+x <- rnorm(50, mean = 5, sd = 1)
+y <- rnorm(50, mean = 5.2, sd = 1)
+t.test2(x, y, paired = TRUE)
+
+# One-sample t-test
+data <- rnorm(100, mean = 5, sd = 1)
+t.test2(data, mu = 0)
 
 # Formula syntax
 data <- data.frame(y = rnorm(100), group = rep(c("A", "B"), 50))
