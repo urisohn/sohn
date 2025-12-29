@@ -277,7 +277,13 @@ t.test2 <- function(...) {
   orig_group2 <- group2
   show_group_mapping <- FALSE
   
-  if (ng <= 8 && !is.na(group1) && !is.na(group2)) {
+  # Handle one-sample tests separately
+  if (is_one_sample) {
+    name_1 <- "mean"
+    name_2 <- NA_character_
+    name_N1 <- "N"
+    name_N2 <- NA_character_
+  } else if (ng <= 8 && !is.na(group1) && !is.na(group2)) {
     name_1 <- group1
     name_2 <- group2
     name_N1 <- paste0("N(", group1, ")")
@@ -294,17 +300,21 @@ t.test2 <- function(...) {
   # Use a list first, then convert to dataframe to allow dynamic column names
   result_list <- list()
   result_list[[name_1]] <- mean1
-  result_list[[name_2]] <- mean2
   
-  # Create diff column name as "group1-group2" (e.g., "men-women")
-  # If using "Group 1" and "Group 2", use "1-2" instead
-  if (!is.na(mean2)) {
-    if (name_1 == "Group 1" && name_2 == "Group 2") {
-      diff_col_name <- "1-2"
-    } else {
-      diff_col_name <- paste0(name_1, "-", name_2)
+  # For one-sample tests, don't add group2 or diff columns
+  if (!is_one_sample) {
+    result_list[[name_2]] <- mean2
+    
+    # Create diff column name as "group1-group2" (e.g., "men-women")
+    # If using "Group 1" and "Group 2", use "1-2" instead
+    if (!is.na(mean2)) {
+      if (name_1 == "Group 1" && name_2 == "Group 2") {
+        diff_col_name <- "1-2"
+      } else {
+        diff_col_name <- paste0(name_1, "-", name_2)
+      }
+      result_list[[diff_col_name]] <- diff
     }
-    result_list[[diff_col_name]] <- diff
   }
   
   result_list$ci <- ci_level
@@ -320,6 +330,9 @@ t.test2 <- function(...) {
     # Add correlation for paired tests with name "r(var1,var2)"
     corr_col_name <- paste0("r(", name_1, ",", name_2, ")")
     result_list[[corr_col_name]] <- corr_value
+  } else if (is_one_sample) {
+    # For one-sample tests, only show N (not N1 or N2)
+    result_list[[name_N1]] <- N1
   } else {
     result_list[[name_N1]] <- N1
     result_list[[name_N2]] <- N2

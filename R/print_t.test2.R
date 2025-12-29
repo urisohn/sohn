@@ -138,9 +138,9 @@ print.t.test2 <- function(x, ...) {
   class(display_x) <- setdiff(class(display_x), "t.test2")
   print.data.frame(display_x, row.names = FALSE, ...)
   
-  # Show group mapping if group names were replaced
+  # Show group mapping if group names were replaced (but not for one-sample tests)
   show_group_mapping <- attr(x, "show_group_mapping")
-  if (isTRUE(show_group_mapping)) {
+  if (isTRUE(show_group_mapping) && !isTRUE(is_one_sample)) {
     orig_group1 <- attr(x, "orig_group1")
     orig_group2 <- attr(x, "orig_group2")
     if (!is.null(orig_group1) && !is.null(orig_group2)) {
