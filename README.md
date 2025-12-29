@@ -275,13 +275,49 @@ message2("This is a cyan message", col = "cyan")
 ```
 </details> 
 
+### 📄 Uri's Papers
 
+<details>
+<summary><code>twolines()</code>: Two-Lines Test of U-Shapes</summary>
+
+Implements the two-lines test for U-shaped (or inverted U-shaped) relationships introduced by Simonsohn (2018).
+
+**Reference:** Simonsohn, Uri (2018) "Two lines: A valid alternative to the invalid testing of U-shaped relationships with quadratic regressions." AMPPS, 538-555. https://doi.org/10.1177/2515245918805755
+
+```r
+# Simple example with simulated data
+set.seed(123)
+x <- rnorm(100)
+y <- -x^2 + rnorm(100)
+data <- data.frame(x = x, y = y)
+result <- twolines(y ~ x, data = data)
+
+# With covariates
+z <- rnorm(100)
+y <- -x^2 + 0.5*z + rnorm(100)
+data <- data.frame(x = x, y = y, z = z)
+result <- twolines(y ~ x + z, data = data)
+
+# Without data argument (variables evaluated from environment)
+x <- rnorm(100)
+y <- -x^2 + rnorm(100)
+result <- twolines(y ~ x)
+
+# Suppress Robin Hood details
+result <- twolines(y ~ x, data = data, quiet = TRUE)
+
+# Save plot to PNG
+result <- twolines(y ~ x, data = data, pngfile = "twolines_plot.png")
+```
+</details>
 
 ## Dependencies
 
-- `mgcv` (for `scatter.gam()` and `plot_gam()`)
+- `mgcv` (for `scatter.gam()`, `plot_gam()`, and `twolines()`)
 - `rsvg` (for `resize_images()`)
 - `magick` (for `resize_images()`)
+- `sandwich` (for `twolines()`)
+- `lmtest` (for `twolines()`)
 
 ## Author
 
