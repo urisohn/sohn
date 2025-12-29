@@ -56,3 +56,25 @@ init_bottom_plot <- function(xlim, ylim, xlab, ylab, bg, cex.lab) {
     invokeRestart("abort") 
   }
 
+#3 Determine decimal places for group values
+  group_decimals <- function(v) {
+    v <- abs(v[is.finite(v)])
+    if (!length(v)) return(2)
+    
+    x <- min(v)
+    if (x < 1)  return(3)
+    if (x < 10) return(2)
+    return(1)
+  }
+
+#3 Determine decimal places for group values
+  group_decimals <- function(v) {
+    v <- abs(v[is.finite(v)])
+    if (!length(v)) return(2)
+    
+    x <- min(v)
+    if (x < 1)  return(3)
+    if (x < 10) return(2)
+    return(1)
+  }
+
