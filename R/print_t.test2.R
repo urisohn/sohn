@@ -1,11 +1,10 @@
 #' Print method for t.test2 output
 #'
 #' @param x An object of class \code{t.test2}
-#' @param quiet Logical. If TRUE, suppresses missing value messages. Default is FALSE.
 #' @param ... Additional arguments passed to print
 #'
 #' @export
-print.t.test2 <- function(x, quiet = FALSE, ...) {
+print.t.test2 <- function(x, ...) {
   # Ensure x is a data frame
   if (!is.data.frame(x)) {
     # Remove the t.test2 class temporarily to avoid infinite recursion
@@ -70,66 +69,47 @@ print.t.test2 <- function(x, quiet = FALSE, ...) {
   }
   
   # Show missing value warnings if present (only for non-paired tests) - after all cat() output
-  if (!quiet) {
-    n_missing_1 <- attr(x, "n_missing_1")
-    n_missing_2 <- attr(x, "n_missing_2")
-    col1_name <- attr(x, "col1_name")
-    col2_name <- attr(x, "col2_name")
-    is_one_sample <- attr(x, "is_one_sample")
-    
-    # Check if this is a one-sample test
-    if (isTRUE(is_one_sample)) {
-      # One-sample test - only show missing values for the single variable
-      n_missing_1 <- if (is.null(n_missing_1)) 0L else n_missing_1
-      if (n_missing_1 > 0 && !is.null(col1_name)) {
-        # Get N value from dataframe (use "N" column for one-sample tests)
-        N1 <- if ("N" %in% names(x)) x[["N"]] else NA_integer_
-        total_1 <- if (!is.na(N1)) N1 + n_missing_1 else NA_integer_
-        
-        if (!is.na(total_1)) {
-          cat(paste0("\nnote: ", n_missing_1, " of ", total_1, " values are missing\n"))
-        } else {
-          cat(paste0("\nnote: ", n_missing_1, " values are missing\n"))
-        }
-      }
-    } else {
-      # Two-sample test - show missing values for both variables
-      n_missing_1 <- if (is.null(n_missing_1)) 0L else n_missing_1
-      n_missing_2 <- if (is.null(n_missing_2)) 0L else n_missing_2
-      has_any_missing <- (n_missing_1 > 0 || n_missing_2 > 0) && !is.null(col1_name) && !is.null(col2_name)
+  n_missing_1 <- attr(x, "n_missing_1")
+  n_missing_2 <- attr(x, "n_missing_2")
+  col1_name <- attr(x, "col1_name")
+  col2_name <- attr(x, "col2_name")
+  is_one_sample <- attr(x, "is_one_sample")
+  
+  # Check if this is a one-sample test
+  if (isTRUE(is_one_sample)) {
+    # One-sample test - only show missing values for the single variable
+    n_missing_1 <- if (is.null(n_missing_1)) 0L else n_missing_1
+    if (n_missing_1 > 0 && !is.null(col1_name)) {
+      # Get N value from dataframe (use "N" column for one-sample tests)
+      N1 <- if ("N" %in% names(x)) x[["N"]] else NA_integer_
+      total_1 <- if (!is.na(N1)) N1 + n_missing_1 else NA_integer_
       
-      if (has_any_missing) {
-        # Get N values (non-NA counts) from dataframe to calculate totals
-        N1_col <- paste0("N_", col1_name)
-        N2_col <- paste0("N_", col2_name)
-        N1 <- if (N1_col %in% names(x)) x[[N1_col]] else NA_integer_
-        N2 <- if (N2_col %in% names(x)) x[[N2_col]] else NA_integer_
-        
-        # Calculate totals (N + missing)
-        total_1 <- if (!is.na(N1)) N1 + n_missing_1 else NA_integer_
-        total_2 <- if (!is.na(N2)) N2 + n_missing_2 else NA_integer_
-        
-        # Build consolidated message: "note: col1_name is missing k1 out of N1 values, col2_name k2 out of N2 values"
-        if (!is.na(total_1) && !is.na(total_2)) {
-          cat(paste0("\nnote: ", col1_name, " is missing ", n_missing_1, " of ", total_1, 
-                     " values, while ", col2_name, " is missing ", n_missing_2, " of ", total_2, "\n"))
-        } else {
-          # Fallback if totals can't be calculated
-          msg <- paste0("note: ", col1_name)
-          if (!is.na(total_1)) {
-            msg <- paste0(msg, " is missing ", n_missing_1, " out of ", total_1, " values")
-          } else {
-            msg <- paste0(msg, " has ", n_missing_1, " missing values")
-          }
-          msg <- paste0(msg, ", ", col2_name)
-          if (!is.na(total_2)) {
-            msg <- paste0(msg, " ", n_missing_2, " out of ", total_2, " values")
-          } else {
-            msg <- paste0(msg, " has ", n_missing_2, " missing values")
-          }
-          cat(paste0("\n", msg, "\n"))
-        }
+      if (!is.na(total_1)) {
+        cat(paste0("\nnote: ", n_missing_1, " of ", total_1, " values are missing\n"))
+      } else {
+        cat(paste0("\nnote: ", n_missing_1, " values are missing\n"))
       }
+    }
+  } else {
+    # Two-sample test - show missing values for both variables
+    n_missing_1 <- if (is.null(n_missing_1)) 0L else n_missing_1
+    n_missing_2 <- if (is.null(n_missing_2)) 0L else n_missing_2
+    has_any_missing <- (n_missing_1 > 0 || n_missing_2 > 0) && !is.null(col1_name) && !is.null(col2_name)
+    
+    if (has_any_missing) {
+      # Get N values (non-NA counts) from dataframe to calculate totals
+      N1_col <- paste0("N_", col1_name)
+      N2_col <- paste0("N_", col2_name)
+      N1 <- if (N1_col %in% names(x)) x[[N1_col]] else NA_integer_
+      N2 <- if (N2_col %in% names(x)) x[[N2_col]] else NA_integer_
+      
+      # Calculate totals (N + missing)
+      total_1 <- if (!is.na(N1)) N1 + n_missing_1 else NA_integer_
+      total_2 <- if (!is.na(N2)) N2 + n_missing_2 else NA_integer_
+      
+      # Warning about missing data
+      cat(paste0("\nnote: '", col1_name, "' is missing ", n_missing_1, " of ", total_1, 
+                 " values, while '", col2_name, "' is missing ", n_missing_2, " of ", total_2, "\n"))
     }
   }
   

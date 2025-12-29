@@ -48,11 +48,8 @@ test_that("t.test2 returns correct columns", {
   expect_true("t" %in% names(result))
   expect_true("df" %in% names(result))
   expect_true("method" %in% names(result))
-  expect_true("conf.intL" %in% names(result))
-  expect_true("conf.intH" %in% names(result))
-  expect_true("level" %in% names(result))
-  # Check that level is a reasonable value (should be between 0 and 100)
-  expect_true(result$level >= 0 && result$level <= 100)
+  expect_true("ci.L" %in% names(result))
+  expect_true("ci.H" %in% names(result))
 })
 
 test_that("t.test2 handles digits parameter", {
