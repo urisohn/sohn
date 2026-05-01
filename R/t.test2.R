@@ -23,6 +23,8 @@
 #'       \code{Group 2} for long names.}
 #'     \item{diff column}{For two-sample tests, the difference between means 
 #'       (e.g., \code{men-women}).}
+#'     \item{d}{For two-sample independent tests only, Cohen's d computed as the
+#'       mean difference divided by the pooled standard deviation.}
 #'     \item{ci}{The confidence level as a string (e.g., "95 percent").}
 #'     \item{ci.L, ci.H}{Lower and upper bounds of the confidence interval.}
 #'     \item{t}{The t-statistic.}
@@ -109,6 +111,10 @@ t.test2 <- function(x, ...) {
   NA2 <- NA_integer_
   NA_paired <- NA_integer_  # Number of dropped pairs for paired tests
   corr_value <- NA_real_
+  
+  # Track extracted raw group vectors for effect size computation (two-sample independent only)
+  d_x <- NULL
+  d_y <- NULL
   
   # Extract data to get group names and sample sizes
   call_args <- sys.call()
@@ -269,8 +275,13 @@ t.test2 <- function(x, ...) {
           group2 <- as.character(g2_val)
         }
         
-        g1_data <- y_var[group_var == unique_groups[1]]
-        g2_data <- y_var[group_var == unique_groups[2]]
+        # Important: exclude NA group values; otherwise logical subsetting keeps NA rows
+        # and inflates missing counts within both groups.
+        g1_data <- y_var[!is.na(group_var) & group_var == unique_groups[1]]
+        g2_data <- y_var[!is.na(group_var) & group_var == unique_groups[2]]
+        
+        d_x <- g1_data
+        d_y <- g2_data
         
         N1 <- sum(!is.na(g1_data))
         N2 <- sum(!is.na(g2_data))
@@ -407,6 +418,7 @@ t.test2 <- function(x, ...) {
         NA1 <- sum(is.na(x_arg))
         # Recalculate mean from data (important for paired tests)
         mean1 <- mean(x_arg, na.rm = TRUE)
+        d_x <- x_arg
       }
       
       if (!is.null(y_arg) && is.numeric(y_arg)) {
@@ -414,6 +426,7 @@ t.test2 <- function(x, ...) {
         NA2 <- sum(is.na(y_arg))
         # Recalculate mean from data (important for paired tests)
         mean2 <- mean(y_arg, na.rm = TRUE)
+        d_y <- y_arg
       }
       
       # For paired tests, calculate correlation and track dropped pairs
@@ -443,6 +456,33 @@ t.test2 <- function(x, ...) {
   if (is_one_sample) {
     group1 <- NA_character_
     group2 <- NA_character_
+  }
+  
+  # Compute Cohen's d (two-sample independent only; pooled SD)
+  d <- NA_real_
+  if (!isTRUE(is_one_sample) && !isTRUE(is_paired)) {
+    if (!is.null(d_x) && !is.null(d_y) && is.numeric(d_x) && is.numeric(d_y)) {
+      x_complete <- d_x[!is.na(d_x)]
+      y_complete <- d_y[!is.na(d_y)]
+      
+      n1 <- length(x_complete)
+      n2 <- length(y_complete)
+      
+      if (n1 >= 2 && n2 >= 2) {
+        s1 <- stats::sd(x_complete)
+        s2 <- stats::sd(y_complete)
+        
+        if (!is.na(s1) && !is.na(s2) && is.finite(s1) && is.finite(s2)) {
+          denom_df <- n1 + n2 - 2
+          if (denom_df > 0) {
+            sp <- sqrt(((n1 - 1) * (s1^2) + (n2 - 1) * (s2^2)) / denom_df)
+            if (!is.na(sp) && is.finite(sp) && sp > 0) {
+              d <- diff / sp
+            }
+          }
+        }
+      }
+    }
   }
   
   #Decide suffix for groups
@@ -490,6 +530,11 @@ t.test2 <- function(x, ...) {
         diff_col_name <- paste0(name_1, "-", name_2)
       }
       result_list[[diff_col_name]] <- diff
+    }
+    
+    # Effect size (two-sample independent only)
+    if (!isTRUE(is_paired)) {
+      result_list$d <- d
     }
   }
   

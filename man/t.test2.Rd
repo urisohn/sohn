@@ -18,6 +18,8 @@ A data frame with class \code{c("t.test2", "data.frame")} containing
       \code{Group 2} for long names.}
     \item{diff column}{For two-sample tests, the difference between means 
       (e.g., \code{men-women}).}
+    \item{d}{For two-sample independent tests only, Cohen's d computed as the
+      mean difference divided by the pooled standard deviation.}
     \item{ci}{The confidence level as a string (e.g., "95 percent").}
     \item{ci.L, ci.H}{Lower and upper bounds of the confidence interval.}
     \item{t}{The t-statistic.}

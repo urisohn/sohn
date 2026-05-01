@@ -1,3 +1,8 @@
+# statuser 0.2.1.9001
+### Improvements
+- `t.test2()`: now reports Cohen's d for two-sample independent tests (returned as `d` and printed after sample sizes).
+- `t.test2()`: missing-value note no longer double-counts rows where the grouping variable is `NA`.
+
 # statuser 0.2.1
 ### changes to pass CRAN inspection
 - `plot_means()`: removed the `save.as` argument (no longer saves plots to PNG/SVG).

@@ -15,7 +15,8 @@
 Invisibly returns the input object \code{x}. Called for its side effect 
   of printing a formatted t-test summary to the console, including means, 
   confidence intervals, test statistics, p-values, sample sizes, and 
-  APA-formatted results.
+  APA-formatted results. For two-sample independent tests, this includes
+  Cohen's d when present in the input.
 }
 \description{
 Print method for t.test2 output

@@ -670,6 +670,9 @@ plot_freq <- function(formula, y2=NULL, data=NULL, freq=TRUE, order=NULL, col='d
           y_ticks <- pretty(freq_range, n = 5)
           # Only keep ticks that are >= 0 and <= y_max_plot (with small tolerance for rounding)
           y_ticks <- y_ticks[y_ticks >= 0 & y_ticks <= y_max_plot + 0.1]
+          # Frequencies are counts; only show integer ticks (e.g., suppress 0.5).
+          y_ticks <- y_ticks[abs(y_ticks - round(y_ticks)) < 1e-9]
+          if (length(y_ticks) == 0) y_ticks <- c(0, ceiling(y_max_plot))
           
           axis(2, at = y_ticks, las = 1)
         }
@@ -939,6 +942,9 @@ plot_freq <- function(formula, y2=NULL, data=NULL, freq=TRUE, order=NULL, col='d
           y_ticks <- pretty(freq_range, n = 5)
           # Only keep ticks that are >= 0 and <= y_max_plot (with small tolerance for rounding)
           y_ticks <- y_ticks[y_ticks >= 0 & y_ticks <= y_max_plot + 0.1]
+          # Frequencies are counts; only show integer ticks (e.g., suppress 0.5).
+          y_ticks <- y_ticks[abs(y_ticks - round(y_ticks)) < 1e-9]
+          if (length(y_ticks) == 0) y_ticks <- c(0, ceiling(y_max_plot))
           
           axis(2, at = y_ticks, las = 1)
         }
