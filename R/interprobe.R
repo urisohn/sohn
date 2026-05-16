@@ -214,7 +214,7 @@ interprobe <- function( x = NULL, z = NULL, y = NULL,
         lm2_formula <- stats::as.formula(paste(yvar, "~", xvar, "*", zvar))
         lm2_results_override <- tryCatch(
           {
-            fit_lm2 <- lm2(lm2_formula, data = data_testing, notes = FALSE)
+            fit_lm2 <- lm2(lm2_formula, data = data_testing)
             attr(fit_lm2, "lm2_call") <- as.call(list(as.name("lm2"), lm2_formula))
             fit_lm2
           },
@@ -293,7 +293,7 @@ interprobe <- function( x = NULL, z = NULL, y = NULL,
               NULL
             } else {
               fo_lm2 <- stats::as.formula(paste(yvar, "~", xvar, "*", zvar))
-              fit_lm2 <- lm2(fo_lm2, data = data, notes = FALSE)
+              fit_lm2 <- lm2(fo_lm2, data = data)
               # Make printed Call reflect the actual interaction formula.
               attr(fit_lm2, "lm2_call") <- as.call(list(as.name("lm2"), fo_lm2))
               fit_lm2

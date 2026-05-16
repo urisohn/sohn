@@ -428,38 +428,39 @@ test_that("lm2 clustered SE is larger than robust SE when there's clustering", {
 # ============================================================================
 
 #lm2_021
-test_that("print.lm2 shows notes by default", {
+test_that("print.lm2 shows lm2_notes hint by default", {
   skip_if_not_installed("estimatr")
-  
+
   result <- lm2(mpg ~ wt, data = mtcars)
   output <- capture.output(print(result))
   output_text <- paste(output, collapse = "\n")
-  
-  expect_true(grepl("Notes:", output_text))
-  expect_true(grepl("std.estimate", output_text))
-  expect_true(grepl("red.flag", output_text))
+
+  expect_true(grepl("lm2_notes\\(\\)", output_text))
+  expect_false(grepl("^Notes:", output_text))
+  expect_false(grepl("std.estimate is the standardized", output_text))
 })
 
 #lm2_022
-test_that("print.lm2 respects notes=FALSE", {
+test_that("explicit notes argument on print.lm2 is deprecated", {
   skip_if_not_installed("estimatr")
-  
+
   result <- lm2(mpg ~ wt, data = mtcars)
-  output <- capture.output(print(result, notes = FALSE))
-  output_text <- paste(output, collapse = "\n")
-  
-  expect_false(grepl("Notes:", output_text))
+  expect_message(
+    print(result, notes = FALSE),
+    "notes is a deprecated argument",
+    fixed = TRUE
+  )
 })
 
 #lm2_023
-test_that("print.lm2 respects notes=FALSE from lm2 call", {
+test_that("explicit notes argument on lm2 is deprecated", {
   skip_if_not_installed("estimatr")
-  
-  result <- lm2(mpg ~ wt, data = mtcars, notes = FALSE)
-  output <- capture.output(print(result))
-  output_text <- paste(output, collapse = "\n")
-  
-  expect_false(grepl("Notes:", output_text))
+
+  expect_message(
+    lm2(mpg ~ wt, data = mtcars, notes = FALSE),
+    "notes is a deprecated argument",
+    fixed = TRUE
+  )
 })
 
 #lm2_024
@@ -488,18 +489,43 @@ test_that("print.lm2 shows model summary statistics", {
 })
 
 #lm2_026
-test_that("print.lm2 shows interaction notes when model has interactions", {
+test_that("lm2_notes shows interaction notes when model has interactions", {
   skip_if_not_installed("estimatr")
-  
+
   result <- lm2(mpg ~ wt * hp, data = mtcars)
-  output <- capture.output(print(result))
-  output_text <- paste(output, collapse = "\n")
-  
-  # Should show interaction-specific notes
+  capture.output(print(result))
+  notes_out <- capture.output(lm2_notes())
+  notes_text <- paste(notes_out, collapse = "\n")
+
   expect_true(
-    grepl("X:", output_text) || grepl("interaction", output_text, ignore.case = TRUE),
+    grepl("r\\(x,z\\)", notes_text) || grepl("interaction", notes_text, ignore.case = TRUE),
     info = "Should show interaction-related notes"
   )
+})
+
+#lm2_026b
+test_that("lm2_notes returns notes built from last print", {
+  skip_if_not_installed("estimatr")
+
+  result <- lm2(mpg ~ wt, data = mtcars)
+  capture.output(print(result))
+  notes_out <- capture.output(lm2_notes())
+  notes_text <- paste(notes_out, collapse = "\n")
+
+  expect_true(grepl("Notes:", notes_text))
+  expect_true(grepl("std.estimate", notes_text))
+  expect_true(grepl("red.flag", notes_text))
+})
+
+#lm2_026c
+test_that("lm2_notes messages when nothing printed yet", {
+  skip_if_not_installed("estimatr")
+
+  st <- getFromNamespace(".statuser_state", "statuser")
+  if (exists(".lm2notes", envir = st, inherits = FALSE)) {
+    rm(".lm2notes", envir = st)
+  }
+  expect_message(lm2_notes(), "No lm2 notes available", fixed = TRUE)
 })
 
 # ============================================================================
@@ -587,7 +613,7 @@ test_that("lm2 mean column shows mean for numeric, % for factor levels", {
   )
   d$y <- 2 * d$x + as.numeric(d$group) + rnorm(n)
 
-  m <- lm2(y ~ x + group, data = d, notes = FALSE)
+  m <- lm2(y ~ x + group, data = d)
   tbl <- attr(m, "statuser_table")
 
   expect_true("x" %in% tbl$term)
@@ -652,27 +678,37 @@ test_that("lm2 print output format is stable", {
   skip_if_not_installed("estimatr")
   
   # Use mtcars for reproducible output
-  result <- lm2(mpg ~ wt + hp, data = mtcars, notes = FALSE)
-  
+  result <- lm2(mpg ~ wt + hp, data = mtcars)
+
   expect_snapshot(print(result))
 })
 
 #lm2_036
-test_that("lm2 print output with notes is stable", {
+test_that("lm2 print output with hint is stable", {
   skip_if_not_installed("estimatr")
-  
-  result <- lm2(mpg ~ wt, data = mtcars, notes = TRUE)
-  
+
+  result <- lm2(mpg ~ wt, data = mtcars)
+
   expect_snapshot(print(result))
 })
 
 #lm2_037
 test_that("lm2 print output with interaction is stable", {
   skip_if_not_installed("estimatr")
-  
-  result <- lm2(mpg ~ wt * hp, data = mtcars, notes = FALSE)
-  
+
+  result <- lm2(mpg ~ wt * hp, data = mtcars)
+
   expect_snapshot(print(result))
+})
+
+#lm2_037b
+test_that("lm2_notes output is stable", {
+  skip_if_not_installed("estimatr")
+
+  result <- lm2(mpg ~ wt, data = mtcars)
+  capture.output(print(result))
+
+  expect_snapshot(lm2_notes())
 })
 
 # ============================================================================

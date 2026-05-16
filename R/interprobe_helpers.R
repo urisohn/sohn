@@ -449,7 +449,7 @@ ip_estimate_model <- function(nux, data, k, xvar, zvar, yvar, engine = c("gam", 
       data[, xvar] <- factor(data[, xvar])
     }
     fo <- stats::as.formula(paste(yvar, "~", xvar, "*", zvar))
-    return(lm2(fo, data = data, notes = FALSE))
+    return(lm2(fo, data = data))
   }
 
   k_if_specified <- ifelse(is.null(k), "", paste0(",k=", k))
@@ -491,7 +491,7 @@ ip_format_p_apa <- function(p, digits = 3, eps = 1e-3) {
 
 ip_get_linear_interaction_test_apa <- function(data, xvar, zvar, yvar) {
   fo <- stats::as.formula(paste(yvar, "~", xvar, "*", zvar))
-  fit <- tryCatch(lm2(fo, data = data, notes = FALSE), error = function(e) NULL)
+  fit <- tryCatch(lm2(fo, data = data), error = function(e) NULL)
   if (is.null(fit)) return("linear model: unavailable")
   tbl <- attr(fit, "statuser_table")
   if (is.null(tbl)) return("linear model: unavailable")

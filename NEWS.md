@@ -2,6 +2,10 @@
 ### Improvements
 - `t.test2()`: now reports Cohen's d for two-sample independent tests (returned as `d` and printed after sample sizes).
 - `t.test2()`: missing-value note no longer double-counts rows where the grouping variable is `NA`.
+- `lm2()`: explanatory notes are no longer printed with the regression table; they are stored when the model is printed and shown via the new `lm2_notes()` function. The print output ends with a reminder to run `lm2_notes()`.
+
+### Deprecated
+- `lm2()` and `print.lm2()`: the `notes` argument is deprecated (ignored). Passing `notes = TRUE` or `notes = FALSE` emits a message directing users to `lm2_notes()`.
 
 # statuser 0.2.1
 ### changes to pass CRAN inspection

@@ -11,8 +11,8 @@
 #' @param se_type The type of standard error to use. Default is \code{"HC3"}.
 #'   Without clusters: \code{"HC0"}, \code{"HC1"}, \code{"HC2"}, or \code{"HC3"}.
 #'   When \code{clusters} is specified, \code{se_type} is automatically set to \code{"CR2"}.
-#' @param notes Logical. If TRUE (default), print explanatory notes below the table
-#'   when the result is printed.
+#' @param notes \code{deprecated}. Ignored. Explanatory notes are always built when
+#'   the model is printed; use \code{\link{lm2_notes}} to view them.
 #' @param clusters An optional variable indicating clusters for cluster-robust standard 
 #'   errors. When specified, \code{se_type} is automatically set to \code{"CR2"} 
 #'   (bias-reduced cluster-robust estimator). Passed to \code{\link[estimatr]{lm_robust}}.
@@ -157,12 +157,16 @@
 #'   When printed, displays a formatted regression table with robust and classical 
 #'   standard errors, effect sizes, and diagnostic red flags.
 #'
-#' @seealso \code{\link[estimatr]{lm_robust}}, \code{\link{scatter.gam}}
+#' @seealso \code{\link[estimatr]{lm_robust}}, \code{\link{scatter.gam}}, \code{\link{lm2_notes}}
 #' @usage NULL
 #' @export lm2
-lm2 <- function(formula, data = NULL, se_type = "HC3", notes = TRUE, 
+lm2 <- function(formula, data = NULL, se_type = "HC3", notes = TRUE,
                 clusters = NULL, fixed_effects = NULL, ...) {
-  
+
+  if (!missing(notes)) {
+    warn_notes_deprecated()
+  }
+
   # Capture the call
   cl <- match.call()
   
@@ -560,7 +564,6 @@ lm2 <- function(formula, data = NULL, se_type = "HC3", notes = TRUE,
   attr(result, "n_missing") <- n_missing
   attr(result, "n_missing_y") <- n_missing_y
   attr(result, "y_name") <- y_name
-  attr(result, "notes") <- notes
   attr(result, "has_clusters") <- has_clusters
   attr(result, "fe_terms") <- fe_terms
   attr(result, "fe_k") <- fe_k
@@ -572,23 +575,152 @@ lm2 <- function(formula, data = NULL, se_type = "HC3", notes = TRUE,
   return(result)
 }
 
+warn_notes_deprecated <- function() {
+  message(
+    "notes is a deprecated argument, notes are now always produced and viewable with `lm2_notes()`"
+  )
+}
+
+build_lm2_notes <- function(x, tbl, se_flag, has_se_flags, has_cor_flags,
+                            has_interactions, has_clusters) {
+  lines <- character(0)
+  lines <- c(lines, "Notes:")
+
+  n_missing_y <- attr(x, "n_missing_y")
+  y_name <- attr(x, "y_name")
+  if (!is.null(n_missing_y) && !is.na(n_missing_y) && n_missing_y > 0) {
+    y_label <- if (!is.null(y_name) && !is.na(y_name)) y_name else "DV"
+    lines <- c(lines, paste0(
+      "  - ", n_missing_y, " observations have missing \"", y_label, "\" values"
+    ))
+  }
+
+  show_dagger <- any(!is.na(tbl$p.value) & tbl$p.value >= 0.05 & tbl$p.value < 0.1)
+  show_star <- any(!is.na(tbl$p.value) & tbl$p.value >= 0.01 & tbl$p.value < 0.05)
+  show_double_star <- any(!is.na(tbl$p.value) & tbl$p.value < 0.01)
+  sig_parts <- character(0)
+  if (show_dagger) sig_parts <- c(sig_parts, "\u2020 p<.1")
+  if (show_star) sig_parts <- c(sig_parts, "* p<.05")
+  if (show_double_star) sig_parts <- c(sig_parts, "** p<.01")
+  sig_basis <- if (has_clusters) "SE.cluster" else "SE.robust"
+  if (length(sig_parts) > 0) {
+    lines <- c(lines, paste0(
+      "  - ", paste(sig_parts, collapse = ", "), " (based on ", sig_basis, ")"
+    ))
+  } else {
+    lines <- c(lines, paste0("  - All estimates are p>.1 (based on ", sig_basis, ")"))
+  }
+  if (has_clusters) {
+    lines <- c(lines, "  - SE.robust (HC3) used only to contrast with SE.classical to flag observations")
+  }
+  lines <- c(lines, "  - std.estimate is the standardized coefficient: beta = b * sd(x) / sd(y)")
+  if (has_interactions) {
+    lines <- c(lines, "  - mean: for main effects mean of x; for x*z interaction where z is factor, mean of x when z==1")
+  } else {
+    lines <- c(lines, "  - mean: for numeric variables, mean of x; for factors, % of observations")
+  }
+  lines <- c(lines, "  - missing: number of observations excluded due to missing values")
+  if (has_interactions) {
+    lines <- c(lines, "  - r(x,z): correlation between interacted variables")
+  }
+
+  if (has_se_flags || has_cor_flags) {
+    lines <- c(lines, "  - red.flag:")
+    if (has_se_flags) {
+      present_se_flags <- intersect(
+        c("!", "!!", "!!!"),
+        unique(unlist(strsplit(se_flag, " ", fixed = TRUE)))
+      )
+      if (length(present_se_flags) > 0) {
+        thresholds <- c("!" = "25%", "!!" = "50%", "!!!" = "100%")
+        thresh_text <- paste(thresholds[present_se_flags], collapse = ", ")
+        flags_text <- paste(present_se_flags, collapse = ", ")
+        lines <- c(lines, paste0(
+          "     ", flags_text, ": robust & classical SE differ by more than ", thresh_text
+        ))
+      }
+      dv_name <- attr(x, "y_name")
+      dv_label <- if (!is.null(dv_name) && !is.na(dv_name)) dv_name else "DV"
+      flagged_vars <- character(0)
+      for (fi in seq_along(se_flag)) {
+        flag_val <- trimws(se_flag[fi])
+        if (flag_val != "" && flag_val != "--") {
+          term_name <- tbl$term[fi]
+          if (term_name != "(Intercept)" && !grepl(":", term_name)) {
+            flagged_vars <- c(flagged_vars, term_name)
+          }
+        }
+      }
+      flagged_label <- if (length(flagged_vars) > 0) {
+        paste(flagged_vars, collapse = ", ")
+      } else {
+        "flagged variable(s)"
+      }
+      lines <- c(lines, "     - Suggestion 1: to evaluate possible extreme skew or outliers:")
+      lines <- c(lines, paste0(
+        "       plot_density() or plot_freq() for ", dv_label, " and for ", flagged_label
+      ))
+      lines <- c(lines, paste0(
+        "     - Suggestion 2: to evaluate possible nonlinearity, do plot_gam(",
+        dv_label, " ~ ", flagged_label, ")"
+      ))
+    }
+    if (has_cor_flags) {
+      lines <- c(lines, "     X: interacted variables are correlated, interaction term is likely to be biased")
+      lines <- c(lines, "        See Simonsohn (2024) \"Interacting with curves\" https://doi.org/10.1177/25152459231207787")
+    }
+  } else {
+    if (has_interactions) {
+      lines <- c(lines, "  - red.flag: none (robust and classical SE are similar and interacted terms are not correlated)")
+    } else {
+      lines <- c(lines, "  - red.flag: none (robust and classical SE are similar)")
+    }
+  }
+
+  fe_terms <- attr(x, "fe_terms")
+  if (!is.null(fe_terms) && length(fe_terms) > 0) {
+    fe_vars <- paste(fe_terms, collapse = ", ")
+    fe_note <- "- <vars> were entered as absorbed fixed effects; df is the number of unique values."
+    fe_note <- gsub("<vars>", fe_vars, fe_note, fixed = TRUE)
+    lines <- c(lines, paste0("  ", fe_note))
+  }
+
+  paste(lines, collapse = "\n")
+}
+
+#' Print explanatory notes from the most recent \code{lm2} print
+#'
+#' After printing an \code{lm2} object, call \code{lm2_notes()} to display the
+#' full \code{Notes:} block (significance legend, column definitions, red-flag
+#' guidance, etc.).
+#'
+#' @return Invisibly returns the notes character string, or \code{NULL} if none stored.
+#' @seealso \code{\link{lm2}}, \code{\link{print.lm2}}
+#' @export
+lm2_notes <- function() {
+  txt <- get0(".lm2notes", envir = .statuser_state, ifnotfound = NULL)
+  if (is.null(txt) || !nzchar(txt)) {
+    message("No lm2 notes available. Print an lm2 object first.")
+    return(invisible(NULL))
+  }
+  cat(txt, "\n", sep = "")
+  invisible(txt)
+}
+
 #' Print method for lm2 objects
 #'
 #' @param x An object of class \code{lm2}
-#' @param notes Logical. If TRUE (default), print explanatory notes below the table.
-#'   If not specified, uses the value set when \code{lm2()} was called.
+#' @param notes \code{deprecated}. Ignored. Use \code{\link{lm2_notes}} after printing.
 #' @param ... Additional arguments (ignored)
 #'
 #' @return Invisibly returns the original object
 #' @export
-print.lm2 <- function(x, notes = NULL, ...) {
-  
-  # Use notes attribute from lm2() call if not explicitly specified
-  if (is.null(notes)) {
-    notes <- attr(x, "notes")
-    if (is.null(notes)) notes <- TRUE  
+print.lm2 <- function(x, notes, ...) {
+
+  if (!missing(notes)) {
+    warn_notes_deprecated()
   }
-  
+
   # Get the statuser table from attribute
   tbl <- attr(x, "statuser_table")
   
@@ -1283,99 +1415,12 @@ print.lm2 <- function(x, notes = NULL, ...) {
   } else {
     cat("SE type:", x$se_type, "\n")
   }
-  if (notes) {
-    cat("\nNotes:\n")
-    n_missing_y <- attr(x, "n_missing_y")
-    y_name <- attr(x, "y_name")
-    if (!is.null(n_missing_y) && !is.na(n_missing_y) && n_missing_y > 0) {
-      y_label <- if (!is.null(y_name) && !is.na(y_name)) y_name else "DV"
-      cat("  - ", n_missing_y, " observations have missing \"", y_label, "\" values\n", sep = "")
-    }
-    show_dagger <- any(!is.na(tbl$p.value) & tbl$p.value >= 0.05 & tbl$p.value < 0.1)
-    show_star <- any(!is.na(tbl$p.value) & tbl$p.value >= 0.01 & tbl$p.value < 0.05)
-    show_double_star <- any(!is.na(tbl$p.value) & tbl$p.value < 0.01)
-    sig_parts <- character(0)
-    if (show_dagger) sig_parts <- c(sig_parts, "\u2020 p<.1")
-    if (show_star) sig_parts <- c(sig_parts, "* p<.05")
-    if (show_double_star) sig_parts <- c(sig_parts, "** p<.01")
-    sig_basis <- if (has_clusters) "SE.cluster" else "SE.robust"
-    if (length(sig_parts) > 0) {
-      cat("  - ", paste(sig_parts, collapse = ", "), " (based on ", sig_basis, ")\n", sep = "")
-    } else {
-      cat("  - All estimates are p>.1 (based on ", sig_basis, ")\n", sep = "")
-    }
-    if (has_clusters) {
-      cat("  - SE.robust (HC3) used only to contrast with SE.classical to flag observations\n")
-    }
-    cat("  - std.estimate is the standardized coefficient: beta = b * sd(x) / sd(y)\n")
-    if (has_interactions) {
-      cat("  - mean: for main effects mean of x; for x*z interaction where z is factor, mean of x when z==1\n")
-    } else {
-      cat("  - mean: for numeric variables, mean of x; for factors, % of observations\n")
-    }
-    cat("  - missing: number of observations excluded due to missing values\n")
-    if (has_interactions) {
-      cat("  - r(x,z): correlation between interacted variables\n")
-    }
-    # Build red.flag note based on which flags are present
-    if (has_se_flags || has_cor_flags) {
-      cat("  - red.flag:\n")
-      # SE flags explanation (only if present)
-      if (has_se_flags) {
-        present_se_flags <- intersect(
-          c("!", "!!", "!!!"),
-          unique(unlist(strsplit(se_flag, " ", fixed = TRUE)))
-        )
-        if (length(present_se_flags) > 0) {
-          thresholds <- c("!" = "25%", "!!" = "50%", "!!!" = "100%")
-          thresh_text <- paste(thresholds[present_se_flags], collapse = ", ")
-          flags_text <- paste(present_se_flags, collapse = ", ")
-          cat("     ", flags_text, ": robust & classical SE differ by more than ", thresh_text, "\n", sep = "")
-        }
-        # Get actual variable names for suggestions
-        dv_name <- attr(x, "y_name")
-        dv_label <- if (!is.null(dv_name) && !is.na(dv_name)) dv_name else "DV"
-        
-        # Find which variables have flags (flagged variables)
-        flagged_vars <- character(0)
-        for (fi in seq_along(se_flag)) {
-          flag_val <- trimws(se_flag[fi])
-          if (flag_val != "" && flag_val != "--") {
-            term_name <- tbl$term[fi]
-            if (term_name != "(Intercept)" && !grepl(":", term_name)) {
-              flagged_vars <- c(flagged_vars, term_name)
-            }
-          }
-        }
-        flagged_label <- if (length(flagged_vars) > 0) paste(flagged_vars, collapse = ", ") else "flagged variable(s)"
-        
-        cat("     - Suggestion 1: to evaluate possible extreme skew or outliers:\n")
-        cat("       plot_density() or plot_freq() for ", dv_label, " and for ", flagged_label, "\n", sep = "")
-        cat("     - Suggestion 2: to evaluate possible nonlinearity, do plot_gam(", dv_label, " ~ ", flagged_label, ")\n", sep = "")
-      }
-      # Correlation flags explanation (only if present)
-      if (has_cor_flags) {
-        cat("     X: interacted variables are correlated, interaction term is likely to be biased\n")
-        cat("        See Simonsohn (2024) \"Interacting with curves\" https://doi.org/10.1177/25152459231207787\n")
-      }
-    } else {
-      if (has_interactions) {
-        cat("  - red.flag: none (robust and classical SE are similar and interacted terms are not correlated)\n")
-      } else {
-        cat("  - red.flag: none (robust and classical SE are similar)\n")
-      }
-    }
-    # Fixed effects note if absorbed (after red.flag)
-    fe_terms <- attr(x, "fe_terms")
-    if (!is.null(fe_terms) && length(fe_terms) > 0) {
-      fe_vars <- paste(fe_terms, collapse = ", ")
-      fe_note <- "- <vars> were entered as absorbed fixed effects; df is the number of unique values."
-      fe_note <- gsub("<vars>", fe_vars, fe_note, fixed = TRUE)
-      cat("  ", fe_note, "\n", sep = "")
-    }
-    cat("  - To avoid these notes, lm2(..., notes=FALSE)\n")
-  }
-  
+  notes_text <- build_lm2_notes(
+    x, tbl, se_flag, has_se_flags, has_cor_flags, has_interactions, has_clusters
+  )
+  assign(".lm2notes", notes_text, envir = .statuser_state)
+  cat("\Note: to see explanations for lm2() output, run: `lm2_notes()`\n")
+
   invisible(x)
 }
 

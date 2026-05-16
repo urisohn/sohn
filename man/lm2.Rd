@@ -8,8 +8,8 @@
 Without clusters: \code{"HC0"}, \code{"HC1"}, \code{"HC2"}, or \code{"HC3"}.
 When \code{clusters} is specified, \code{se_type} is automatically set to \code{"CR2"}.}
 
-\item{notes}{Logical. If TRUE (default), print explanatory notes below the table
-when the result is printed.}
+\item{notes}{\code{deprecated}. Ignored. Explanatory notes are always built when
+the model is printed; use \code{\link{lm2_notes}} to view them.}
 
 \item{clusters}{An optional variable indicating clusters for cluster-robust standard 
 errors. When specified, \code{se_type} is automatically set to \code{"CR2"} 
@@ -168,5 +168,5 @@ interactions in the real (nonlinear) world. \emph{Advances in Methods and Practi
 Psychological Science}, 7(1), 1-22.
 }
 \seealso{
-\code{\link[estimatr]{lm_robust}}, \code{\link{scatter.gam}}
+\code{\link[estimatr]{lm_robust}}, \code{\link{scatter.gam}}, \code{\link{lm2_notes}}
 }
