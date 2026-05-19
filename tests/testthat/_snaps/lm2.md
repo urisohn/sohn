@@ -16,7 +16,7 @@
       
       N = 32  | missing = 0  | df = 29  | R² = 0.827  | SE type: HC3 
       
-        - To see notes: `lm2_notes()`
+      Note: to see explanations for lm2() output, run: `lm2_notes()`
 
 # lm2 print output with hint is stable
 
@@ -34,7 +34,7 @@
       
       N = 32  | missing = 0  | df = 30  | R² = 0.753  | SE type: HC3 
       
-        - To see notes: `lm2_notes()`
+      Note: to see explanations for lm2() output, run: `lm2_notes()`
 
 # lm2 print output with interaction is stable
 
@@ -56,7 +56,7 @@
       
       N = 32  | missing = 0  | df = 28  | R² = 0.885  | SE type: HC3 
       
-        - To see notes: `lm2_notes()`
+      Note: to see explanations for lm2() output, run: `lm2_notes()`
 
 # lm2_notes output is stable
 

@@ -1,3 +1,9 @@
+# statuser 0.2.2.9000
+### New functions
+- Added `stimulus.plot()` for stimulus plots in matched/treated-stimulus designs (means and effects plots with null resampling).
+- Added `stimulus.beeswarm()` for compared-stimulus designs.
+- Added `clear_stimulus_cache()` to reset resampling cache used by stimulus plotting functions.
+
 # statuser 0.2.1.9001
 ### Improvements
 - `t.test2()`: now reports Cohen's d for two-sample independent tests (returned as `d` and printed after sample sizes).

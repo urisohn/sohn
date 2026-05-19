@@ -25,6 +25,8 @@ that is self-explanatory, and generate publication-ready results in 1 line of co
 \itemize{
   \item \code{\link{twolines}}: Two-lines test for U-shapes (Simonsohn 2018)
   \item \code{\link{interprobe}}: Probe and visualize nonlinear interactions (Simonsohn 2024; Montealegre & Simonsohn 2026)
+  \item \code{\link{stimulus.plot}}: Stimulus plots for matched/treated-stimulus designs (Simonsohn, Montealegre, & Evangelidis 2024)
+  \item \code{\link{stimulus.beeswarm}}: Beeswarm plots for compared-stimulus designs (Simonsohn, Montealegre, & Evangelidis 2024)
 }
 }
 
@@ -35,7 +37,7 @@ that is self-explanatory, and generate publication-ready results in 1 line of co
   \item \code{\link{plot_cdf}}: Plot empirical cumulative distribution functions (optional, by group)
   \item \code{\link{plot_density}}: Plot density functions (optional, by group)
   \item \code{\link{plot_freq}}: Plot frequency of observed values (optional, by group)
-  \item \code{\link{plot_means}}: Barplot of means with confidence intervals and (optionally) tests
+  \item \code{\link{plot_means}}: Barplot of means with confidence intervals and (optionally) tests. See also \code{\link{stimulus.plot}} for per-stimulus plots.
   \item \code{\link{plot_gam}}: Plot fitted GAM values for a focal predictor
 }
 }
@@ -68,6 +70,9 @@ Practices in Psychological Science}, 1(4), 538-555. \doi{10.1177/251524591880575
 Simonsohn, U. (2024). Interacting with curves: How to validly test and probe interactions in the real (nonlinear) world. \emph{Advances in Methods and Practices in Psychological Science}, 7(1), Article 25152459231207787. \doi{10.1177/25152459231207787}
 
 Montealegre, D., & Simonsohn, U. (2026). \emph{Johnson Neyman 2.0} (working paper).
+
+Simonsohn, U., Montealegre, A., & Evangelidis, I. (2024). Stimulus sampling reimagined.
+\emph{Advances in Methods and Practices in Psychological Science}.
 }
 \seealso{
 Useful links:

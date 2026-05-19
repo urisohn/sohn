@@ -1419,7 +1419,7 @@ print.lm2 <- function(x, notes, ...) {
     x, tbl, se_flag, has_se_flags, has_cor_flags, has_interactions, has_clusters
   )
   assign(".lm2notes", notes_text, envir = .statuser_state)
-  cat("\Note: to see explanations for lm2() output, run: `lm2_notes()`\n")
+  cat("\nNote: to see explanations for lm2() output, run: `lm2_notes()`\n")
 
   invisible(x)
 }

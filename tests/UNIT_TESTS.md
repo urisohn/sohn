@@ -217,6 +217,21 @@ Helper code: `tests/testthat/helper-backend_equivalence.R`.
 
 ---
 
+## `test-stimulus.plot.R` → `R/stimulus.plot.R`, `R/stimulus.beeswarm.R`, `R/clear_stimulus_cache.R`, `R/stimulus_auxiliary.R`
+
+| Subset | What it checks |
+|--------|----------------|
+| **Means plot** | Returns data frame with per-stimulus effect columns. |
+| **Effects plot** | Returns list with observed effects, null band, resamples, heterogeneity p-value. |
+| **Design validation** | Compared-stimulus data errors with message pointing to `stimulus.beeswarm()`. |
+| **Beeswarm** | Runs on compared-stimulus subset; returns coordinate matrix. |
+| **Cache** | `clear_stimulus_cache()` empties package resampling cache. |
+| **Regression MD5** | Salerno & Slepian fixtures match saved RDS hashes (effects, means, model=all subset). |
+
+Fixtures: `tests/testthat/data/stimulus_saved_results/*.rds`.
+
+---
+
 ## `test-validate_plot.R` → `R/validate.R` (`validate_plot()`)
 
 | Subset | What it checks |
