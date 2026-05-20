@@ -14,7 +14,7 @@
 #' @param plot2 How to plot the distribution in the lower plot. Options: \code{'auto'} (default,
 #'   auto-select based on number of unique values), \code{'freq'} (always plot frequencies),
 #'   \code{'density'} (always plot the density) or \code{'none'} (neither). When \code{'auto'}, 
-#'   plots frequencies with predictor has less than 30 unique values, density otherwise.
+#'   plots frequencies when the predictor has fewer than 30 unique values, density otherwise.
 #' @param col2 Color for the lines/bars in the bottom distribution plot. Default is "dodgerblue"
 #' @param bg2 Background color for the bottom distribution plot. Default is "gray90".
 #' @param ... Additional arguments passed to \code{plot()} and \code{lines()}.

@@ -14,7 +14,7 @@
 #' @param model By default `interprobe` estimates a GAM model predicting `y` with `x` and `z`.
 #' You can instead probe a linear interaction by setting model=linear. You can also probe a 
 #' model of your choice by running it separately, saving the output, and submitting it as the model 
-#' argument to  interprobe. This is the way to include covariates for a probed interaction.
+#' argument to interprobe. This is the way to include covariates for a probed interaction.
 #' @param data Optional data frame containing `x`, `z`, and `y`.
 #' @param moderator.on.x.axis Logical. If TRUE (default), moderator (`z`) is shown on the x-axis.
 #' @param k Integer. Smoothness parameter passed to `mgcv::gam()` when estimating with the default

@@ -1,6 +1,6 @@
 #' Enhanced alternative to text()
 #' 
-#' Adds to text() optional background color and verbal alignment (align='center')
+#' Adds to text() optional background color and horizontal alignment (align='center')
 #'
 #' @param x,y coordinates for text placement 
 #' @param labels text to display
@@ -18,7 +18,7 @@
 #' # Create a simple plot
 #' plot(1:10, 1:10, type = "n", main = "text2() - Alignment & Color")
 #' 
-#' # Alignment respect to x=5
+#' # Alignment with respect to x=5
 #' text2(5, 8, "align='left' from 5", align = "left", bg = "yellow1")
 #' text2(5, 7, "align='right' from 5", align = "right", bg = "blue", col = "white")
 #' text2(5, 6, "align='center' from 5", align = "center", bg = "black", col = "white")

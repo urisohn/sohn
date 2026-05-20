@@ -40,7 +40,6 @@
 #' @importFrom graphics mtext
 #' @importFrom utils packageVersion
 #' @importFrom stats ave qt residuals t.test
-#' @import lme4
 #' @import lmerTest
 #' @export
 stimulus.plot <- function(

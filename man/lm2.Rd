@@ -51,8 +51,9 @@ inflated false-positive rates in smaller samples (Long & Ervin, 2000).
 }
 \details{
 Robust standard errors and clustered standard errors are computed using 
-\code{\link[estimatr]{lm_robust}}; see the documentation of that function for details (using by default CR2 errors)
-The output shows both standard errors and when clustering errors it reports all three.
+\code{\link[estimatr]{lm_robust}}; see the documentation of that function for details.
+With clusters, \code{lm_robust} uses CR2 by default.
+The output shows both standard errors; when clustering is used it reports all three.
 The red.flag column is based on the difference between robust and classical standard errors.
 
 The \code{red.flag} column provides diagnostic warnings:

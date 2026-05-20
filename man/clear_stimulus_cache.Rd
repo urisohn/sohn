@@ -2,7 +2,7 @@
 % Please edit documentation in R/clear_stimulus_cache.R
 \name{clear_stimulus_cache}
 \alias{clear_stimulus_cache}
-\title{Clear cache used by stimulus.plot() to re-use resampling results from identical previous calls.}
+\title{Clear cache used by stimulus.plot() to reuse resampling results from identical previous calls.}
 \usage{
 clear_stimulus_cache()
 }

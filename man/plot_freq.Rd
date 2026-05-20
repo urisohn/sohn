@@ -72,14 +72,13 @@ shown only when plot_freq is not already labeling all x values on the x-axis.}
 Invisibly returns a data frame with values and their frequencies.
 }
 \description{
-Creates a frequency plot showing the frequency of every observed value, optionaly by group. 
+Creates a frequency plot showing the frequency of every observed value, optionally by group. 
 Most frequent values are labeled by default.
 }
 \details{
 This function creates a frequency plot where each observed value is shown
-with its frequency. Unlike a standard histogram, there is no binning, unlike
-a barplot, non-observed values of the variable are shown with 0 frequency 
-instead of skipped.
+with its frequency. Unlike a histogram (no binning) and unlike a barplot
+(which omits unobserved levels), unobserved values are shown at frequency 0.
 }
 \examples{
 # Simple example

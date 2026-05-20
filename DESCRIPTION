@@ -1,18 +1,13 @@
 Package: statuser
 Type: Package
 Title: Statistical Tools Designed for End Users
-Version: 0.2.2.9000
+Version: 0.3.0
 Authors@R: c(
     person(given = "Uri",
            family = "Simonsohn",
            role = c("aut", "cre"),
-           email = "urisohn@gmail.com"),
-    person(given = "Andres",
-           family = "Montealegre",
-           role = c("aut", "ctb"),
-           email = "andres.montealegremoreno@yale.edu")
-    )
-Author: Uri Simonsohn [aut, cre], Andres Montealegre [aut, ctb]
+           email = "urisohn@gmail.com"))
+Author: Uri Simonsohn [aut, cre]
 Maintainer: Uri Simonsohn <urisohn@gmail.com>
 Description: The statistical tools in this package do one of four things:
     1) Enhance basic statistical functions with more 
@@ -32,7 +27,6 @@ Imports:
     magick,
     sandwich,
     lmtest,
-    lme4,
     lmerTest,
     digest,
     beeswarm,

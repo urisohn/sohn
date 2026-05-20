@@ -1,4 +1,4 @@
-#' Clear cache used by stimulus.plot() to re-use resampling results from identical previous calls.
+#' Clear cache used by stimulus.plot() to reuse resampling results from identical previous calls.
 #'
 #' When `stimulus.plot()` with `plot.type = 'effects'` is run, resamples are saved in
 #' package state. If an identical call is run again (same data, dv, condition, number of

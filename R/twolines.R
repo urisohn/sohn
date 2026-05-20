@@ -12,7 +12,7 @@
 
 #' Two-Lines Test of U-Shapes
 #'
-#'Implements the two-lines test for U-shaped (or inverted U-shaped) relationships 
+#' Implements the two-lines test for U-shaped (or inverted U-shaped) relationships 
 #'introduced by Simonsohn (2018).
 #'
 #' Reference: 

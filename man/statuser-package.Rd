@@ -39,6 +39,7 @@ that is self-explanatory, and generate publication-ready results in 1 line of co
   \item \code{\link{plot_freq}}: Plot frequency of observed values (optional, by group)
   \item \code{\link{plot_means}}: Barplot of means with confidence intervals and (optionally) tests. See also \code{\link{stimulus.plot}} for per-stimulus plots.
   \item \code{\link{plot_gam}}: Plot fitted GAM values for a focal predictor
+  \item \code{\link{text2}}: like text() adding horizontal alignment and background color
 }
 }
 
@@ -58,7 +59,6 @@ that is self-explanatory, and generate publication-ready results in 1 line of co
   \item \code{\link{clear}}: Clear environment, console, and all graphics devices
   \item \code{\link{list2}}: Like list(), but unnamed objects are automatically named
   \item \code{\link{convert_to_sql}}: Convert CSV files to SQL INSERT statements
-  \item \code{\link{text2}}: like text() adding text-alignment and background color
 }
 }
 
