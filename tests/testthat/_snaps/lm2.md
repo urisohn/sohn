@@ -6,9 +6,9 @@
       Call: lm2(formula = mpg ~ wt + hp, data = mtcars)
       
                   estimate  SE.robust SE.classical t.value p.value std.estimate
-      intercept    37.23**    2.230      1.599      16.70   <.0001        --   
-      wt          -3.878**    0.769      0.633     -5.046   <.0001    -0.630   
-      hp          -0.032**    .0094      .0090     -3.385    .0021    -0.361   
+      intercept    37.23**    2.230      1.599      16.70   <.0001       --    
+      wt          -3.878**    .769       .633      -5.046   <.0001    -.630    
+      hp           -.032**    .009       .009      -3.385    .0021    -.361    
                     mean missing red.flag
       intercept      --    --        !   
       wt          3.217    0         --  
@@ -26,8 +26,8 @@
       Call: lm2(formula = mpg ~ wt, data = mtcars)
       
                   estimate  SE.robust SE.classical t.value p.value std.estimate
-      intercept    37.29**    2.427      1.878      15.36   <.0001        --   
-      wt          -5.344**    0.738      0.559     -7.241   <.0001    -0.868   
+      intercept    37.29**    2.427      1.878      15.36   <.0001       --    
+      wt          -5.344**    .738       .559      -7.241   <.0001    -.868    
                     mean missing red.flag
       intercept      --    --        !   
       wt          3.217    0         !   
@@ -46,8 +46,8 @@
                   estimate  SE.robust SE.classical t.value p.value std.estimate
       intercept    49.81**    5.113      3.605      9.741   <.0001        --   
       wt          -8.217**    1.655      1.270     -4.965   <.0001    -1.334   
-      hp          -0.120**    0.032      0.025     -3.732    .0009    -1.366   
-      wt:hp        0.028**    .0096      .0074      2.888    .0074     0.310   
+      hp           -.120**    .032       .025      -3.732    .0009    -1.366   
+      wt:hp         .028**    .010       .007       2.888    .0074      .310   
                     mean missing r(x,z)   red.flag
       intercept      --    --          --     !   
       wt          3.217    0           --     !   

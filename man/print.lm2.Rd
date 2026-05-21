@@ -4,12 +4,15 @@
 \alias{print.lm2}
 \title{Print method for lm2 objects}
 \usage{
-\method{print}{lm2}(x, notes, ...)
+\method{print}{lm2}(x, notes, round = NULL, ...)
 }
 \arguments{
 \item{x}{An object of class \code{lm2}}
 
 \item{notes}{\code{deprecated}. Ignored. Use \code{\link{lm2_notes}} after printing.}
+
+\item{round}{Optional integer: \code{NULL} uses the value from \code{lm2()};
+\code{-1} for R default \code{format()}; non-negative \code{k} for fixed decimals.}
 
 \item{...}{Additional arguments (ignored)}
 }

@@ -20,6 +20,11 @@ to be projected out (absorbed) before estimation. Useful for models with many
 fixed effect groups (e.g., \code{~ firm_id} or \code{~ firm_id + year}). 
 Passed to \code{\link[estimatr]{lm_robust}}.}
 
+\item{round}{Optional integer controlling printed numeric formatting.
+\code{NULL} (default): magnitude-based decimals (1--3 places) with zero-chop.
+\code{-1}: R default \code{format()} (respects \code{options("digits")}), with
+leading-dot style for \code{|x| < 1}. Non-negative \code{k}: fixed \code{k} decimal places.}
+
 \item{...}{Additional arguments passed to \code{\link[estimatr]{lm_robust}}.}
 }
 \value{

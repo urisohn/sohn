@@ -1,3 +1,8 @@
+# statuser 0.3.0.9001
+
+### Improvements
+- `lm2()`: improved display rounding for printed regression tables. Near-zero numerical noise (e.g. from near-perfect fits) displays as `.000` instead of long scientific-notation strings; values with `|x| < 1` always omit the leading zero (including zero). Extreme `t` statistics display as `>999`. New optional `round` argument on `lm2()` and `print.lm2()`: `NULL` uses magnitude-based rules, `round = -1` uses R default `format()`, and non-negative values fix decimal places.
+
 # statuser 0.3.0
 ### New functions
 - Added `stimulus.plot()` for stimulus plots in matched/treated-stimulus designs (means and effects plots with null resampling).

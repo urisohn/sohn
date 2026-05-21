@@ -976,3 +976,105 @@ test_that("lm2 coef extraction works like lm_robust", {
   # confint() should work
   expect_equal(confint(m1), confint(m2))
 })
+
+#lm2_051
+test_that("lm2 chops near-zero noise to zero in default print", {
+  skip_if_not_installed("estimatr")
+
+  n <- 48
+  df <- data.frame(
+    writeups = runif(n, 70, 85),
+    b_points = runif(n, 85, 98),
+    participation = runif(n, 85, 98),
+    final_project = runif(n, 78, 92),
+    exam = runif(n, 80, 95)
+  )
+  df$final_grade <- 20 + 0.2 * df$writeups + 0.2 * df$b_points +
+    0.2 * df$final_project + 0.2 * df$exam
+
+  result <- lm2(
+    final_grade ~ writeups + b_points + participation + final_project + exam,
+    data = df
+  )
+  output <- capture.output(print(result))
+  output_text <- paste(output, collapse = "\n")
+
+  expect_false(grepl("e\\+", output_text, ignore.case = TRUE))
+  expect_false(grepl("e-", output_text, ignore.case = TRUE))
+  expect_match(output_text, "participation")
+  expect_match(output_text, "\\.000")
+  expect_match(output_text, ">999")
+})
+
+#lm2_052
+test_that("lm2 round argument forces uniform decimal places", {
+  skip_if_not_installed("estimatr")
+
+  n <- 48
+  df <- data.frame(
+    writeups = runif(n, 70, 85),
+    b_points = runif(n, 85, 98),
+    participation = runif(n, 85, 98),
+    final_project = runif(n, 78, 92),
+    exam = runif(n, 80, 95)
+  )
+  df$final_grade <- 20 + 0.2 * df$writeups + 0.2 * df$b_points +
+    0.2 * df$final_project + 0.2 * df$exam
+
+  result <- lm2(
+    final_grade ~ writeups + b_points + participation + final_project + exam,
+    data = df,
+    round = 3
+  )
+  expect_equal(attr(result, "round"), 3)
+
+  output <- capture.output(print(result))
+  output_text <- paste(output, collapse = "\n")
+
+  expect_match(output_text, "round = 3")
+  expect_match(output_text, "20\\.000\\*\\*")
+  expect_match(output_text, "writeups\\s+\\.200\\*\\*")
+  expect_match(output_text, "participation\\s+\\.000")
+})
+
+#lm2_053
+test_that("lm2 stores round attribute and print can override", {
+  skip_if_not_installed("estimatr")
+
+  result <- lm2(mpg ~ wt + hp, data = mtcars, round = 2)
+  expect_equal(attr(result, "round"), 2)
+
+  output <- capture.output(print(result, round = 3))
+  output_text <- paste(output, collapse = "\n")
+  expect_match(output_text, "37\\.227\\*\\*")
+})
+
+#lm2_054
+test_that("lm2 round = -1 uses R default format with leading-dot style", {
+  skip_if_not_installed("estimatr")
+
+  result <- lm2(mpg ~ wt + hp, data = mtcars, round = -1)
+  expect_equal(attr(result, "round"), -1L)
+
+  output <- capture.output(print(result))
+  output_text <- paste(output, collapse = "\n")
+
+  expect_match(output_text, "round = -1")
+  expect_match(output_text, "hp\\s+-.03177295")
+  expect_match(output_text, "\\.009385138")
+  expect_false(grepl("hp\\s+-.032\\*\\*", output_text))
+})
+
+#lm2_055
+test_that("lm2 validates round argument", {
+  skip_if_not_installed("estimatr")
+
+  expect_error(
+    lm2(mpg ~ wt, data = mtcars, round = -2),
+    "`round` must be NULL, -1, or a non-negative integer"
+  )
+  expect_error(
+    lm2(mpg ~ wt, data = mtcars, round = 1.5),
+    "`round` must be NULL, -1, or a non-negative integer"
+  )
+})
