@@ -1,7 +1,7 @@
 #' Make stimulus plots as in "Stimulus Sampling Reimagined"
 #'
 #' Build stimulus plots comparing results for individual stimuli in an experiment
-#' (Simonsohn, Montealegre, & Evangelidis, 2024).
+#' (Simonsohn, Montealegre, & Evangelidis, 2025).
 #'
 #' @param plot.type Either `"means"` or `"effects"`; determines what is plotted on the y-axis.
 #' @param data Data frame containing variables to be analyzed.

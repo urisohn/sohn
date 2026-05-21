@@ -1,7 +1,7 @@
 #' Make beeswarm plots for compared-stimulus designs
 #'
 #' Beeswarm plot for compared-stimulus designs from "Stimulus Sampling Reimagined"
-#' (Simonsohn, Montealegre, & Evangelidis, 2024).
+#' (Simonsohn, Montealegre, & Evangelidis, 2025).
 #'
 #' @param data Data frame containing variables to be analyzed.
 #' @param dv Name of the dependent variable.

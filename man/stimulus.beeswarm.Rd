@@ -73,5 +73,5 @@ Invisibly, a two-column matrix of beeswarm coordinates.
 }
 \description{
 Beeswarm plot for compared-stimulus designs from "Stimulus Sampling Reimagined"
-(Simonsohn, Montealegre, & Evangelidis, 2024).
+(Simonsohn, Montealegre, & Evangelidis, 2025).
 }

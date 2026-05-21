@@ -101,5 +101,5 @@ Invisibly, a data frame (means plot) or list (effects plot).
 }
 \description{
 Build stimulus plots comparing results for individual stimuli in an experiment
-(Simonsohn, Montealegre, & Evangelidis, 2024).
+(Simonsohn, Montealegre, & Evangelidis, 2025).
 }

@@ -16,8 +16,8 @@
 #' \itemize{
 #'   \item \code{\link{twolines}}: Two-lines test for U-shapes (Simonsohn 2018)
 #'   \item \code{\link{interprobe}}: Probe and visualize nonlinear interactions (Simonsohn 2024; Montealegre & Simonsohn 2026)
-#'   \item \code{\link{stimulus.plot}}: Stimulus plots for matched/treated-stimulus designs (Simonsohn, Montealegre, & Evangelidis 2024)
-#'   \item \code{\link{stimulus.beeswarm}}: Beeswarm plots for compared-stimulus designs (Simonsohn, Montealegre, & Evangelidis 2024)
+#'   \item \code{\link{stimulus.plot}}: Stimulus plots for matched/treated-stimulus designs (Simonsohn, Montealegre, & Evangelidis 2025)
+#'   \item \code{\link{stimulus.beeswarm}}: Beeswarm plots for compared-stimulus designs (Simonsohn, Montealegre, & Evangelidis 2025)
 #' }
 #'
 #' @section Graphing:
@@ -59,8 +59,10 @@
 #'
 #' Montealegre, D., & Simonsohn, U. (2026). \emph{Johnson Neyman 2.0} (working paper).
 #'
-#' Simonsohn, U., Montealegre, A., & Evangelidis, I. (2024). Stimulus sampling reimagined.
-#' \emph{Advances in Methods and Practices in Psychological Science}.
+#' Simonsohn, U., Montealegre, A., & Evangelidis, I. (2025). Stimulus sampling reimagined:
+#' Designing experiments with mix-and-match, analyzing results with stimulus plots.
+#' \emph{Journal of Personality and Social Psychology}, 129(1), 71--90.
+#' \doi{10.1037/pspa0000449}
 #' 
 #' @seealso
 #' Useful links:
