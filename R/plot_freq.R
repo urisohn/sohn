@@ -1,6 +1,6 @@
 #' Plot frequencies for a variable (histogram without binning)
 #'
-#' Creates a frequency plot showing the frequency of every observed value, optionaly by group. 
+#' Creates a frequency plot showing the frequency of every observed value, optionally by group. 
 #' Most frequent values are labeled by default.
 #'
 #' @param formula Two possible uses (similar to \code{t.test()}):
@@ -39,9 +39,8 @@
 #'
 #' @details
 #' This function creates a frequency plot where each observed value is shown
-#' with its frequency. Unlike a standard histogram, there is no binning, unlike
-#' a barplot, non-observed values of the variable are shown with 0 frequency 
-#' instead of skipped.
+#' with its frequency. Unlike a histogram (no binning) and unlike a barplot
+#' (which omits unobserved levels), unobserved values are shown at frequency 0.
 #'
 #' @examples
 #' # Simple example
@@ -200,7 +199,7 @@ plot_freq <- function(formula, y2=NULL, data=NULL, freq=TRUE, order=NULL, col='d
     # Emit the standard message shown when value.labels="auto" and the plot has
     # more unique values than the auto cutoff.
     warn_value_labels_auto_many <- function() {
-      message2("plot_freq() says: because there are more than 30 unique values, frequency was printed only for the mode. Set  `value.labels` to modify this behavior")
+      invisible(NULL)
     }
     
     # Return a logical mask selecting the bars that should receive frequency
@@ -670,6 +669,9 @@ plot_freq <- function(formula, y2=NULL, data=NULL, freq=TRUE, order=NULL, col='d
           y_ticks <- pretty(freq_range, n = 5)
           # Only keep ticks that are >= 0 and <= y_max_plot (with small tolerance for rounding)
           y_ticks <- y_ticks[y_ticks >= 0 & y_ticks <= y_max_plot + 0.1]
+          # Frequencies are counts; only show integer ticks (e.g., suppress 0.5).
+          y_ticks <- y_ticks[abs(y_ticks - round(y_ticks)) < 1e-9]
+          if (length(y_ticks) == 0) y_ticks <- c(0, ceiling(y_max_plot))
           
           axis(2, at = y_ticks, las = 1)
         }
@@ -939,6 +941,9 @@ plot_freq <- function(formula, y2=NULL, data=NULL, freq=TRUE, order=NULL, col='d
           y_ticks <- pretty(freq_range, n = 5)
           # Only keep ticks that are >= 0 and <= y_max_plot (with small tolerance for rounding)
           y_ticks <- y_ticks[y_ticks >= 0 & y_ticks <= y_max_plot + 0.1]
+          # Frequencies are counts; only show integer ticks (e.g., suppress 0.5).
+          y_ticks <- y_ticks[abs(y_ticks - round(y_ticks)) < 1e-9]
+          if (length(y_ticks) == 0) y_ticks <- c(0, ceiling(y_max_plot))
           
           axis(2, at = y_ticks, las = 1)
         }

@@ -89,6 +89,29 @@ print.t.test2 <- function(x, ...) {
     display_x <- x[, !names(x) %in% cols_to_remove, drop = FALSE]
   } else {
     display_x <- x
+    
+    # If Cohen's d is present, place it after the N columns in the printed table
+    if ("d" %in% names(display_x)) {
+      n_cols <- character(0)
+      if (!is.null(name_N1) && name_N1 %in% names(display_x)) {
+        n_cols <- c(n_cols, name_N1)
+      }
+      if (!is.null(name_N2) && name_N2 %in% names(display_x)) {
+        n_cols <- c(n_cols, name_N2)
+      }
+      
+      if (length(n_cols) == 2) {
+        base_cols <- setdiff(names(display_x), "d")
+        n_pos <- match(n_cols, base_cols)
+        n_pos <- n_pos[!is.na(n_pos)]
+        
+        if (length(n_pos) > 0) {
+          insert_after <- max(n_pos)
+          after_cols <- if (insert_after < length(base_cols)) base_cols[(insert_after + 1):length(base_cols)] else character(0)
+          display_x <- display_x[, c(base_cols[seq_len(insert_after)], "d", after_cols), drop = FALSE]
+        }
+      }
+    }
   }
   
   # Format numeric columns using group_decimals

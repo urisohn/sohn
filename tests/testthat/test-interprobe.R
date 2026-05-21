@@ -154,7 +154,7 @@ test_that("interprobe works with lm2() model input", {
   y1 <- y.raw + e
 
   df <- data.frame(x1, y1, z1)
-  lm2_1 <- lm2(y1 ~ x1 * z1, data = df, notes = FALSE)
+  lm2_1 <- lm2(y1 ~ x1 * z1, data = df)
 
   grDevices::pdf(file = tempfile(fileext = ".pdf"), width = 7, height = 7)
   on.exit(grDevices::dev.off(), add = TRUE)
@@ -310,7 +310,7 @@ test_that("bare model = linear uses fitted object when linear exists", {
       z1 <- rnorm(n)
       y1 <- x1 * z1 + rnorm(n)
       df <- data.frame(x1, z1, y1)
-      linear <- lm2(y1 ~ x1 * z1, data = df, notes = FALSE)
+      linear <- lm2(y1 ~ x1 * z1, data = df)
       grDevices::pdf(file = tempfile(fileext = ".pdf"), width = 7, height = 7)
       on.exit(grDevices::dev.off(), add = TRUE)
       interprobe(

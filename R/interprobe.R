@@ -14,7 +14,7 @@
 #' @param model By default `interprobe` estimates a GAM model predicting `y` with `x` and `z`.
 #' You can instead probe a linear interaction by setting model=linear. You can also probe a 
 #' model of your choice by running it separately, saving the output, and submitting it as the model 
-#' argument to  interprobe. This is the way to include covariates for a probed interaction.
+#' argument to interprobe. This is the way to include covariates for a probed interaction.
 #' @param data Optional data frame containing `x`, `z`, and `y`.
 #' @param moderator.on.x.axis Logical. If TRUE (default), moderator (`z`) is shown on the x-axis.
 #' @param k Integer. Smoothness parameter passed to `mgcv::gam()` when estimating with the default
@@ -214,7 +214,7 @@ interprobe <- function( x = NULL, z = NULL, y = NULL,
         lm2_formula <- stats::as.formula(paste(yvar, "~", xvar, "*", zvar))
         lm2_results_override <- tryCatch(
           {
-            fit_lm2 <- lm2(lm2_formula, data = data_testing, notes = FALSE)
+            fit_lm2 <- lm2(lm2_formula, data = data_testing)
             attr(fit_lm2, "lm2_call") <- as.call(list(as.name("lm2"), lm2_formula))
             fit_lm2
           },
@@ -293,7 +293,7 @@ interprobe <- function( x = NULL, z = NULL, y = NULL,
               NULL
             } else {
               fo_lm2 <- stats::as.formula(paste(yvar, "~", xvar, "*", zvar))
-              fit_lm2 <- lm2(fo_lm2, data = data, notes = FALSE)
+              fit_lm2 <- lm2(fo_lm2, data = data)
               # Make printed Call reflect the actual interaction formula.
               attr(fit_lm2, "lm2_call") <- as.call(list(as.name("lm2"), fo_lm2))
               fit_lm2

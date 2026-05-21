@@ -8,8 +8,8 @@
 Without clusters: \code{"HC0"}, \code{"HC1"}, \code{"HC2"}, or \code{"HC3"}.
 When \code{clusters} is specified, \code{se_type} is automatically set to \code{"CR2"}.}
 
-\item{notes}{Logical. If TRUE (default), print explanatory notes below the table
-when the result is printed.}
+\item{notes}{\code{deprecated}. Ignored. Explanatory notes are always built when
+the model is printed; use \code{\link{lm2_notes}} to view them.}
 
 \item{clusters}{An optional variable indicating clusters for cluster-robust standard 
 errors. When specified, \code{se_type} is automatically set to \code{"CR2"} 
@@ -51,8 +51,9 @@ inflated false-positive rates in smaller samples (Long & Ervin, 2000).
 }
 \details{
 Robust standard errors and clustered standard errors are computed using 
-\code{\link[estimatr]{lm_robust}}; see the documentation of that function for details (using by default CR2 errors)
-The output shows both standard errors and when clustering errors it reports all three.
+\code{\link[estimatr]{lm_robust}}; see the documentation of that function for details.
+With clusters, \code{lm_robust} uses CR2 by default.
+The output shows both standard errors; when clustering is used it reports all three.
 The red.flag column is based on the difference between robust and classical standard errors.
 
 The \code{red.flag} column provides diagnostic warnings:
@@ -168,5 +169,5 @@ interactions in the real (nonlinear) world. \emph{Advances in Methods and Practi
 Psychological Science}, 7(1), 1-22.
 }
 \seealso{
-\code{\link[estimatr]{lm_robust}}, \code{\link{scatter.gam}}
+\code{\link[estimatr]{lm_robust}}, \code{\link{scatter.gam}}, \code{\link{lm2_notes}}
 }

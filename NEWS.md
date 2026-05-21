@@ -1,8 +1,22 @@
+# statuser 0.3.0
+### New functions
+- Added `stimulus.plot()` for stimulus plots in matched/treated-stimulus designs (means and effects plots with null resampling).
+- Added `stimulus.beeswarm()` for compared-stimulus designs.
+- Added `clear_stimulus_cache()` to reset resampling cache used by stimulus plotting functions.
+
+### Improvements
+- `t.test2()`: now reports Cohen's d for two-sample independent tests (returned as `d` and printed after sample sizes).
+- `t.test2()`: missing-value note no longer double-counts rows where the grouping variable is `NA`.
+- `lm2()`: explanatory notes are no longer printed with the regression table; they are stored when the model is printed and shown via the new `lm2_notes()` function. The print output ends with a reminder to run `lm2_notes()`.
+
+### Deprecated
+- `lm2()` and `print.lm2()`: the `notes` argument is deprecated (ignored). Passing `notes = TRUE` or `notes = FALSE` emits a message directing users to `lm2_notes()`.
+
 # statuser 0.2.1
 ### changes to pass CRAN inspection
 - `plot_means()`: removed the `save.as` argument (no longer saves plots to PNG/SVG).
 - `t.test2()`: documented S3 registration as `t.test2` for `base::t` to avoid recurring CRAN S3 consistency notes while keeping direct `t.test2(...)` usage unchanged.
-- `desc_var()`: removed dependency on `labelled` rely on new function var_labels
+- `desc_var()`: removed dependency on `labelled`; now relies on new function `var_labels`
 
 ### New function
 - Added `var_labels()` to get/set these labels for vectors and data frames. This avoids depending on labelled 

@@ -197,7 +197,7 @@ df <- data.frame(
 table (df$group, df$status)
 table2(df$group, df$status)
 
-# can report proportinos (building in prop.table() )
+# can report proportions (built into prop.table())
 table2(df$group, df$status, prop = "all")    # Overall proportions
 table2(df$group, df$status, prop = "row")    # Row proportions
 table2(df$group, df$status, prop = "column") # Column proportions
@@ -280,7 +280,7 @@ lm2(mpg ~ wt + hp, data = mtcars, se_type = "HC2")
 	men <- rnorm(100, mean = 5, sd = 1)
 	women <- rnorm(100, mean = 4.8, sd = 1)
 
-# t.test() is harder to interpret, does not show difference of means(!) or indicate which mean is subtraced from which
+# t.test() is harder to interpret, does not show difference of means(!) or indicate which mean is subtracted from which
 
 	t.test(men, women) 
 	t.test2(men, women)
@@ -376,6 +376,5 @@ GPL-3
 
 ## Version
 
-- **Release:** 0.1.8  
-- **Development:** 0.1.8.9001
+- **Release:** 0.3.0
 
