@@ -226,7 +226,7 @@ Helper code: `tests/testthat/helper-backend_equivalence.R`.
 | **Design validation** | Compared-stimulus data errors with message pointing to `stimulus.beeswarm()`. |
 | **Beeswarm** | Runs on compared-stimulus subset; returns coordinate matrix. |
 | **Cache** | `clear_stimulus_cache()` empties package resampling cache. |
-| **Regression MD5** | Salerno & Slepian fixtures match saved RDS hashes (effects, means, model=all subset). |
+| **Regression fixtures** | Salerno & Slepian effects/means outputs match saved RDS reference (tolerance 1e-4); model=all subset same pattern. |
 
 Fixtures: `tests/testthat/data/stimulus_saved_results/*.rds`.
 

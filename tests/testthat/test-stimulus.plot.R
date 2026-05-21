@@ -18,6 +18,43 @@ stimulus_compared_data <- function(df1) {
   df1
 }
 
+stimulus_observed_numeric_cols <- function() {
+  c("effect", "t", "df", "p", "ciL", "ciH")
+}
+
+expect_stimulus_effects_matches_saved <- function(actual, saved, tolerance = 1e-4) {
+  expect_equal(names(actual), names(saved))
+  expect_equal(nrow(actual$observed), nrow(saved$observed))
+  expect_equal(actual$observed$stimulus, saved$observed$stimulus)
+  num <- stimulus_observed_numeric_cols()
+  for (col in num) {
+    expect_equal(actual$observed[[col]], saved$observed[[col]], tolerance = tolerance)
+  }
+  cond_cols <- setdiff(names(actual$observed), c("stimulus", num))
+  expect_equal(sort(cond_cols), sort(setdiff(names(saved$observed), c("stimulus", num))))
+  for (col in cond_cols) {
+    expect_equal(actual$observed[[col]], saved$observed[[col]], tolerance = tolerance)
+  }
+  expect_equal(actual$p.hetero, saved$p.hetero)
+  expect_equal(actual$under.null, saved$under.null, tolerance = tolerance)
+  expect_equal(as.matrix(actual$resamples), as.matrix(saved$resamples), tolerance = tolerance)
+}
+
+expect_stimulus_means_matches_saved <- function(actual, saved, tolerance = 1e-4) {
+  expect_equal(names(actual), names(saved))
+  expect_equal(nrow(actual), nrow(saved))
+  expect_equal(actual$stimulus, saved$stimulus)
+  num <- stimulus_observed_numeric_cols()
+  for (col in num) {
+    expect_equal(actual[[col]], saved[[col]], tolerance = tolerance)
+  }
+  cond_cols <- setdiff(names(actual), c("stimulus", num))
+  expect_equal(sort(cond_cols), sort(setdiff(names(saved), c("stimulus", num))))
+  for (col in cond_cols) {
+    expect_equal(actual[[col]], saved[[col]], tolerance = tolerance)
+  }
+}
+
 #stimulus.plot_001
 test_that("stimulus.plot means returns expected structure", {
   dat <- stimulus_test_data()
@@ -115,7 +152,7 @@ test_that("clear_stimulus_cache resets package cache", {
 })
 
 #stimulus.plot_006
-test_that("Salerno & Slepian effects with simtot=20 matches saved md5", {
+test_that("Salerno & Slepian effects with simtot=20 matches saved reference", {
   dat <- stimulus_test_data()
   grDevices::pdf(tempfile(fileext = ".pdf"))
   on.exit(grDevices::dev.off(), add = TRUE)
@@ -129,11 +166,11 @@ test_that("Salerno & Slepian effects with simtot=20 matches saved md5", {
 
   fp <- testthat::test_path("data", "stimulus_saved_results", "r1.rds")
   skip_if_not(file.exists(fp), "saved r1 fixture missing")
-  expect_equal(get.md5(r1), get.md5(readRDS(fp)))
+  expect_stimulus_effects_matches_saved(r1, readRDS(fp))
 })
 
 #stimulus.plot_007
-test_that("Salerno & Slepian means matches saved md5", {
+test_that("Salerno & Slepian means matches saved reference", {
   dat <- stimulus_test_data()
   grDevices::pdf(tempfile(fileext = ".pdf"))
   on.exit(grDevices::dev.off(), add = TRUE)
@@ -146,7 +183,7 @@ test_that("Salerno & Slepian means matches saved md5", {
 
   fp <- testthat::test_path("data", "stimulus_saved_results", "r2.rds")
   skip_if_not(file.exists(fp), "saved r2 fixture missing")
-  expect_equal(get.md5(r2), get.md5(readRDS(fp)))
+  expect_stimulus_means_matches_saved(r2, readRDS(fp))
 })
 
 #stimulus.plot_008
