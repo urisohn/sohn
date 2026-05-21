@@ -1,308 +1,270 @@
 # statuser
 
-Miscellaneous R functions for papers, blogposts, & teaching by Uri Simonsohn.
+**Stat Tools for End Users**
+
+Basic and custom statistical tools designed with end users in mind. Functions have optimized defaults, produce decluttered and informative output that is self-explanatory, and generate publication-ready results in one line of code.
 
 ## Installation
 
 ```r
-# Install with `groundhog` (for version control)
-groundhog::groundhog.library("statuser", date)   #date used for version control 
-
-# Or with base R
+# CRAN (when available)
 install.packages("statuser")
+
+# Or pin a version with groundhog
+groundhog::groundhog.library("statuser", date)
 ```
 
 ## Overview
 
-Functions I often use and are not (sufficiently?) available in existing packages.
+Same organization as `help(statuser)`:
 
-## Functions
+### Basic Stats (improved)
 
-### 📄 Uri's Papers
+- `lm2()` — like `lm()`, with robust SE and much more informative output
+- `t.test2()` — like `t.test()`, decluttered, and more informative output
+- `table2()` — like `table()`, showing variable names, and with proportions & chi2 built in
+- `desc_var()` — descriptive statistics for variables (optional, by group(s))
 
-<details>
-<summary><code>twolines()</code>: Two-Lines Test of U-Shapes</summary>
+### Custom tools from papers by Uri Simonsohn
 
-Implements the two-lines test for U-shaped (or inverted U-shaped) relationships introduced by Simonsohn (2018).
+- `twolines()` — two-lines test for U-shapes (Simonsohn 2018)
+- `interprobe()` — probe and visualize nonlinear interactions (Simonsohn 2024; Montealegre & Simonsohn 2026)
+- `stimulus.plot()` — stimulus plots for matched/treated-stimulus designs (Simonsohn, Montealegre, & Evangelidis 2025)
+- `stimulus.beeswarm()` — beeswarm plots for compared-stimulus designs (Simonsohn, Montealegre, & Evangelidis 2025)
 
-**Reference:** Simonsohn, Uri (2018) "Two lines: A valid alternative to the invalid testing of U-shaped relationships with quadratic regressions." AMPPS, 538-555. https://doi.org/10.1177/2515245918805755
+### Graphing
 
-```r
-# Simple example with simulated data
-set.seed(123)
-x <- rnorm(100)
-y <- -x^2 + rnorm(100)
-data <- data.frame(x = x, y = y)
-result <- twolines(y ~ x, data = data)
+- `scatter.gam()` — scatter plot for x & y, with fitted GAM line y = f(x)
+- `plot_cdf()` — empirical cumulative distribution functions (optional, by group)
+- `plot_density()` — density functions (optional, by group)
+- `plot_freq()` — frequency of observed values (optional, by group)
+- `plot_means()` — barplot of means with confidence intervals and (optionally) tests; see also `stimulus.plot()` for per-stimulus plots
+- `plot_gam()` — fitted GAM values for a focal predictor
+- `text2()` — like `text()` with horizontal alignment and background color
 
-# With covariates
-z <- rnorm(100)
-y <- -x^2 + 0.5*z + rnorm(100)
-data <- data.frame(x = x, y = y, z = z)
-result <- twolines(y ~ x + z, data = data)
+### Formatting
 
-# Without data argument (variables evaluated from environment)
-x <- rnorm(100)
-y <- -x^2 + rnorm(100)
-result <- twolines(y ~ x)
+- `format_pvalue()` — format p-values for display
+- `var_labels()` — get/set variable labels (as base-R `"label"` attributes)
+- `message2()` — print colored messages to console
+- `resize_images()` — resize images (SVG, PDF, EPS, JPG, PNG, etc.) to PNG with specified width
 
-# Suppress Robin Hood details
-result <- twolines(y ~ x, data = data, quiet = TRUE)
+### Miscellaneous
 
-# Save plot to PNG
-result <- twolines(y ~ x, data = data, pngfile = "twolines_plot.png")
-```
-</details>
+- `clear()` — clear environment, console, and all graphics devices
+- `list2()` — like `list()`, but unnamed objects are automatically named
+- `convert_to_sql()` — convert CSV files to SQL INSERT statements
 
-### 📊 Graphing
+## Examples
 
-<details>
-<summary><code>plot_cdf()</code>: CDF for multiple groups in one plot</summary>
-
-```r
-y <- rnorm(100)
-x <- rep(c("A", "B"), 50)
-plot_cdf(y ~ x)  # Uses default colors
-plot_cdf(y ~ x, col = c("red", "blue"))  # Custom colors
-
-# Control group order
-plot_cdf(y ~ x, order = -1)  # Reverse default order
-plot_cdf(y ~ x, order = c("B", "A"))  # Custom order
-```
-</details>
+### Basic Stats (improved)
 
 <details>
-<summary><code>plot_density()</code>: Density for multiple groups in one plot</summary>
+<summary><code>lm2()</code>: like <code>lm()</code>, with robust SE and much more informative output</summary>
+
+Uses **estimatr** for robust and clustered errors. Notes via `lm2_notes()` after printing.
 
 ```r
-y <- rnorm(100)
-x <- rep(c("A", "B"), 50)
-plot_density(y ~ x)  # Uses default colors
-plot_density(y ~ x, col = c("red", "blue"))  # Custom colors
-plot_density(y ~ x, show.means = FALSE)  # Hide mean segments
-
-# Control group order
-plot_density(y ~ x, order = -1)  # Reverse default order
-plot_density(y ~ x, order = c("B", "A"))  # Custom order
+lm2(mpg ~ wt + hp, data = mtcars)
+lm2(mpg ~ wt + hp, data = mtcars, se_type = "HC2")
+lm2_notes()
 ```
 </details>
 
 <details>
-<summary><code>plot_freq()</code>: Frequency distribution without binning, with value labels</summary>
+<summary><code>t.test2()</code>: like <code>t.test()</code>, decluttered, and more informative output</summary>
 
 ```r
-x <- c(1, 1, 2, 2, 2, 5, 5)
-plot_freq(x)
+men <- rnorm(100, mean = 5, sd = 1)
+women <- rnorm(100, mean = 4.8, sd = 1)
+t.test2(men, women)
 
-# Grouped frequency plot
-df <- data.frame(value = c(1, 1, 2, 2, 2, 5, 5), group = c("A", "A", "A", "B", "B", "A", "B"))
-plot_freq(value ~ group, data = df)
-
-# Control group order in legend and plot
-plot_freq(value ~ group, data = df, order = c("B", "A"))  # B first, then A
-plot_freq(value ~ group, data = df, order = -1)  # Reverse default order
-
-# Factor levels are respected automatically
-df$group <- factor(df$group, levels = c("B", "A"))
-plot_freq(value ~ group, data = df)  # B will appear first
-
-# Show percentages instead of frequencies
-plot_freq(value ~ group, data = df, freq = FALSE)
-
-# Customize legend and labels
-plot_freq(value ~ group, data = df, legend.title = "Treatment", col.text = "black")
+data <- data.frame(y = rnorm(100), group = rep(c("A", "B"), 50))
+t.test2(y ~ group, data = data)
 ```
 </details>
 
 <details>
-<summary><code>plot_gam()</code>: Plot GAM model predictions with optional distribution plot</summary>
-
-```r
-library(mgcv)
-# Fit a GAM model
-data(mtcars)
-model <- gam(mpg ~ s(hp) + s(wt) + factor(cyl), data = mtcars)
-
-# Basic plot
-plot_gam(model, "hp")
-
-# With distribution plot below (auto-selects plot_freq or plot_density)
-plot_gam(model, "hp", plot2 = "auto")
-
-# Always use frequency plot
-plot_gam(model, "hp", plot2 = "freq")
-
-# Always use density plot
-plot_gam(model, "hp", plot2 = "density")
-
-# Customize colors for main plot and bottom plot
-plot_gam(model, "hp", plot2 = "auto", 
-         col = "blue4", bg = adjustcolor('dodgerblue', .2),  # Main plot colors
-         col2 = "steelblue", bg2 = "gray95")  # Bottom plot colors
-
-# Hold other variables at different quantile
-plot_gam(model, "hp", quantile.others = 25)
-```
-</details>
-
-<details>
-<summary><code>scatter.gam()</code>: Scatter plots with GAM smooth lines</summary>
-
-```r
-x <- rnorm(100)
-y <- 2*x + rnorm(100)
-scatter.gam(x, y)
-```
-</details>
-
-<details>
-<summary><code>text2()</code>: Adds to text(): align='center' , bg='yellow'</summary>
-
-```r
-plot(1:10, 1:10, type = "n")
-   text2(2, 8, "Left", align = "left", bg = "lightblue")
-   text2(5, 8, "Center", align = "center", bg = "lightgreen")
-   text2(8, 8, "Right",    align = "right", bg = "lightyellow")
-   text2(5, 5, "Red Text", col = "red", bg = "white")
-```
-</details>
-
-<details>
-<summary><code>resize_images()</code>: Saves any image (or all in folder) as PNG with set width.</summary>
-
-```r
-# Resize a single image file
-   resize_images("path/to/image.svg", width = 800)
-
-# Resize all images in a folder to 800px width
-   resize_images("path/to/images", width = 800)
-
-# Resize images to different widths
-   resize_images("path/to/images", width = c(800, 1200, 600))
-```
-</details>
-
-### 📈 Statistical Analyses
-
-<details>
-<summary><code>table2()</code>: Enhances base table(): (1) variable names are shown, (2) proportions are an option</summary>
+<summary><code>table2()</code>: like <code>table()</code>, showing variable names, with proportions & chi2 built in</summary>
 
 ```r
 df <- data.frame(
   group = c("A", "A", "B", "B", "A"),
   status = c("X", "Y", "X", "Y", "X")
 )
-
-# table() does not show var names, table2() does
-table (df$group, df$status)
 table2(df$group, df$status)
-
-# can report proportions (built into prop.table())
-table2(df$group, df$status, prop = "all")    # Overall proportions
-table2(df$group, df$status, prop = "row")    # Row proportions
-table2(df$group, df$status, prop = "column") # Column proportions
+table2(df$group, df$status, prop = "row", chi = TRUE)
 ```
 </details>
 
 <details>
-<summary><code>desc_var()</code>: Comprehensive variable summary stats, optionally by grouping variable(s)</summary>
+<summary><code>desc_var()</code>: descriptive statistics for variables (optional, by group(s))</summary>
 
 ```r
-# Why use desc_var() instead of psych::describeBy()?
-# - Returns a single dataframe (not a list) - easier to export, filter, merge
-# - Shows mode statistics (most frequent values) - useful for discrete data
-# - Counts missing values automatically
-# - Columns are labeled for easy interpretation
-# - Supports multiple grouping variables with formula syntax
-# - Results are sorted by grouping variables
-
-# With grouping - compare groups side-by-side
 df <- data.frame(score = rnorm(100), condition = rep(c("Control", "Treatment"), 50))
-desc_var(score, condition, data = df)
-
-# Formula syntax (single grouping variable)
 desc_var(score ~ condition, data = df)
+```
+</details>
 
-# Multiple grouping variables - results sorted by all grouping variables
-df2 <- data.frame(
-  score = rnorm(200),
-  x1 = rep(c("A", "B"), 100),
-  x2 = rep(c("men", "women"), each = 100),
-  x3 = sample(1:3, replace = TRUE, size = 200)
+### Custom tools from papers by Uri Simonsohn
+
+<details>
+<summary><code>twolines()</code>: two-lines test for U-shapes (Simonsohn 2018)</summary>
+
+Implements the two-lines test (Simonsohn, 2018).
+
+**Reference:** Simonsohn, U. (2018). Two lines: A valid alternative to the invalid testing of U-shaped relationships with quadratic regressions. *Advances in Methods and Practices in Psychological Science*, 1(4), 538–555. https://doi.org/10.1177/2515245918805755
+
+```r
+set.seed(123)
+x <- rnorm(100)
+y <- -x^2 + rnorm(100)
+data <- data.frame(x = x, y = y)
+twolines(y ~ x, data = data)
+
+# With covariates, suppress Robin Hood details, or save PNG
+twolines(y ~ x + z, data = data, quiet = TRUE)
+twolines(y ~ x, data = data, pngfile = "twolines_plot.png")
+```
+</details>
+
+<details>
+<summary><code>interprobe()</code>: probe and visualize nonlinear interactions</summary>
+
+Estimates or accepts a model, then plots simple slopes and Johnson–Neyman curves. Default engine is GAM; also supports linear models, supplied fits, and `lm2()`.
+
+**References:** Simonsohn, U. (2024). *AMPPS*. https://doi.org/10.1177/25152459231207787
+
+```r
+interprobe(x = "predictor", z = "moderator", y = "outcome", data = df)
+interprobe(x = "predictor", z = "moderator", y = "outcome", data = df, model = "linear")
+```
+</details>
+
+<details>
+<summary><code>stimulus.plot()</code>: stimulus plots for matched/treated-stimulus designs</summary>
+
+**Reference:** Simonsohn, U., Montealegre, A., & Evangelidis, I. (2025). *JPSP*, 129(1), 71–90. https://doi.org/10.1037/pspa0000449
+
+```r
+stimulus.plot(
+  data = df, dv = "score", stimulus = "item", condition = "cond",
+  plot.type = "means", watermark = FALSE
 )
-desc_var(score ~ x1 + x2 + x3, data = df2)
 
-# Without grouping - get stats for full dataset
-desc_var(score, data = df)
+stimulus.plot(
+  data = df, dv = "score", stimulus = "item", condition = "cond",
+  plot.type = "effects", participant = "id", simtot = 500, seed = 2024
+)
 
-# Direct vectors (no data frame needed)
-scores <- rnorm(100)
-groups <- rep(c("A", "B"), 50)
-desc_var(scores, groups)
-
-# Custom decimal places for cleaner output
-desc_var(score, condition, data = df, decimals = 2)
+clear_stimulus_cache()
 ```
 </details>
 
 <details>
-<summary><code>lm2()</code>: Enhanced linear regression with robust SEs, standardized coefficients, and diagnostics</summary>
+<summary><code>stimulus.beeswarm()</code>: beeswarm plots for compared-stimulus designs</summary>
 
 ```r
-# Basic usage - uses HC3 robust standard errors by default
-lm2(mpg ~ wt + hp, data = mtcars)
+stimulus.beeswarm(
+  data = df, dv = "score", stimulus = "stim_id", condition = "cond",
+  simtot = 500, watermark = FALSE
+)
+```
+</details>
 
-# Works without data argument if variables exist in environment
+### Graphing
+
+<details>
+<summary><code>scatter.gam()</code>: scatter plot for x & y, with fitted GAM line</summary>
+
+```r
+x <- rnorm(100)
+y <- 2 * x + rnorm(100)
+scatter.gam(x, y)
+scatter.gam(y ~ x, data = data.frame(x, y), data.dots = TRUE)
+```
+</details>
+
+<details>
+<summary><code>plot_cdf()</code>: ECDFs by group</summary>
+
+```r
 y <- rnorm(100)
-x1 <- rnorm(100)
-x2 <- rnorm(100)
-lm2(y ~ x1 + x2)
-
-# Output includes:
-# - Robust and classical standard errors side-by-side
-# - Standardized coefficients (effect.size)
-# - Missing value counts per variable
-# - Red flags when robust and classical SEs differ substantially
-
-# Get estimatr's native output instead
-lm2(mpg ~ wt + hp, data = mtcars, output = "estimatr")
-
-# Use different robust SE type (HC0, HC1, HC2, HC3)
-lm2(mpg ~ wt + hp, data = mtcars, se_type = "HC2")
+x <- rep(c("A", "B"), 50)
+plot_cdf(y ~ x)
+plot_cdf(y ~ x, col = c("red", "blue"), order = c("B", "A"))
 ```
 </details>
 
 <details>
-<summary><code>t.test2()</code>: Enhances base t.test: (1) console shows mean diff & var names, (2) output is dataframe, not list</summary>
+<summary><code>plot_density()</code>: Densities by group</summary>
 
 ```r
-# Data for example
-	men <- rnorm(100, mean = 5, sd = 1)
-	women <- rnorm(100, mean = 4.8, sd = 1)
-
-# t.test() is harder to interpret, does not show difference of means(!) or indicate which mean is subtracted from which
-
-	t.test(men, women) 
-	t.test2(men, women)
-
-# Formula syntax
-	data <- data.frame(y = rnorm(100), group = rep(c("A", "B"), 50))
-	t2 = t.test2(y ~ group, data = data)  # Columns: A, B, A-B, SE_A-B, conf.intL, conf.intH, level, t, df, p.value, method, se_A, se_B
-	t2
-
-# Formula syntax without data argument
-	x1=rnorm(100)
-	x2=rnorm(100)
-	y <- c(x1, x2)
-	condition <- rep(c('A', 'B'), c(length(x1), length(x2)))
-	t.test2(y ~ condition)  
+plot_density(y ~ x)
+plot_density(y ~ x, col = c("red", "blue"), show.means = FALSE, order = -1)
 ```
 </details>
 
-### ✨ Formatting
+<details>
+<summary><code>plot_freq()</code>: Frequency plot without binning</summary>
+
+```r
+plot_freq(c(1, 1, 2, 2, 2, 5, 5))
+
+df <- data.frame(
+  value = c(1, 1, 2, 2, 2, 5, 5),
+  group = c("A", "A", "A", "B", "B", "A", "B")
+)
+plot_freq(value ~ group, data = df, order = c("B", "A"))
+plot_freq(value ~ group, data = df, freq = FALSE, legend.title = "Treatment")
+```
+</details>
 
 <details>
-<summary><code>format_pvalue()</code>: Format p-values for clean display in figures and tables (e.g., p<.0001)</summary>
+<summary><code>plot_means()</code>: barplot of means with CIs and (optionally) tests</summary>
+
+Up to three grouping factors; optional clustered SEs and custom comparisons. See `stimulus.plot()` for per-stimulus plots.
+
+```r
+df <- data.frame(y = rnorm(100), group = rep(c("A", "B"), 50))
+plot_means(y ~ group, data = df, quiet = TRUE)
+
+df2 <- data.frame(
+  y = rnorm(200),
+  x1 = rep(c("A", "B"), 100),
+  x2 = rep(c("X", "Y"), each = 100)
+)
+plot_means(y ~ x1 + x2, data = df2)
+```
+</details>
+
+<details>
+<summary><code>plot_gam()</code>: GAM partial effect with optional distribution panel</summary>
+
+```r
+library(mgcv)
+model <- gam(mpg ~ s(hp) + s(wt) + factor(cyl), data = mtcars)
+plot_gam(model, "hp", plot2 = "auto")
+plot_gam(model, "hp", plot2 = "freq", quantile.others = 25)
+```
+</details>
+
+<details>
+<summary><code>text2()</code>: like <code>text()</code> with horizontal alignment and background color</summary>
+
+```r
+plot(1:10, 1:10, type = "n")
+text2(2, 8, "Left", align = "left", bg = "lightblue")
+text2(5, 8, "Center", align = "center", bg = "lightgreen")
+text2(8, 8, "Right", align = "right", bg = "lightyellow")
+text2(5, 5, "Red text", col = "red", bg = "white")
+```
+</details>
+
+### Formatting
+
+<details>
+<summary><code>format_pvalue()</code>: format p-values for display</summary>
 
 ```r
 format_pvalue(0.05)
@@ -311,64 +273,67 @@ format_pvalue(0.0001, include_p = TRUE)
 </details>
 
 <details>
-<summary><code>message2()</code>: Print colored messages to console</summary>
+<summary><code>var_labels()</code>: get/set variable labels</summary>
 
 ```r
-message2("This is a red message", col = "red", font = 2)
-message2("This is a cyan message", col = "cyan")
-```
-</details>
-
-### 🗂️ Miscellaneous
-
-<details>
-<summary><code>list2()</code>: Create lists with objects without having to name them</summary>
-
-```r
-	x <- 1:5
-	y <- letters[1:3]
-	z <- matrix(1:4, nrow = 2)
-	list2(x, y, z)
+df <- data.frame(x = 1:3, y = 4:6)
+var_labels(df) <- c("Variable X", "Variable Y")
+var_labels(df)
 ```
 </details>
 
 <details>
-<summary><code>convert_to_sql()</code>: Convert CSV to SQL</summary>
+<summary><code>message2()</code>: print colored messages to console</summary>
 
 ```r
-	convert_to_sql("data.csv", "data.sql")
+message2("Note", col = "cyan", font = 2)
 ```
 </details>
 
 <details>
-<summary><code>clear()</code>: Clear plot, global environment, and console</summary>
-
-Clears plot, global environment, and console. On first use you are prompted to authorize (one-time; your choice is saved).
+<summary><code>resize_images()</code>: resize images to PNG at a set width</summary>
 
 ```r
-# Create some objects
-	x <- 1:10
-	y <- rnorm(10)
-	plot(x, y)
-
-# Clear everything (first run may prompt for one-time permission)
-	clear()
+resize_images("path/to/image.svg", width = 800)
+resize_images("path/to/images", width = c(800, 1200, 600))
 ```
-</details> 
+</details>
+
+### Miscellaneous
+
+<details>
+<summary><code>clear()</code>: clear environment, console, and graphics devices</summary>
+
+```r
+clear()  # first run may prompt for one-time permission
+```
+</details>
+
+<details>
+<summary><code>list2()</code>: like <code>list()</code>, auto-named objects</summary>
+
+```r
+list2(x, y, z)
+```
+</details>
+
+<details>
+<summary><code>convert_to_sql()</code>: CSV to SQL INSERT statements</summary>
+
+```r
+convert_to_sql("data.csv", "data.sql")
+```
+</details>
 
 ## Dependencies
 
-- `mgcv` (for `scatter.gam()`, `plot_gam()`, and `twolines()`)
-- `rsvg` (for `resize_images()`)
-- `magick` (for `resize_images()`)
-- `sandwich` (for `twolines()`)
-- `lmtest` (for `twolines()`)
-- `estimatr` (for `lm2()`)
+**Imports:** `mgcv`, `marginaleffects`, `rsvg`, `magick`, `sandwich`, `lmtest`, `lmerTest`, `digest`, `beeswarm`, `utils`
+
+**Suggested (optional features):** `estimatr` (`lm2()`), `testthat`, `crayon`, `quantreg`, `broom`, `modelsummary`
 
 ## Author
 
-**Uri Simonsohn**  
-Email: urisohn@gmail.com
+**Uri Simonsohn** — urisohn@gmail.com — https://github.com/urisohn/statuser
 
 ## License
 
@@ -376,5 +341,4 @@ GPL-3
 
 ## Version
 
-- **Release:** 0.3.0
-
+CRAN release: **0.3.0** (stimulus plots, `lm2_notes()`, Cohen's d in `t.test2()`, and related fixes). Development version may be ahead of CRAN.
