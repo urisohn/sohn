@@ -15,7 +15,8 @@
 #'   }
 #' @param digits Number of decimal values to show for proportions 
 #' @param chi Logical. If \code{TRUE}, performs a chi-square test on frequency table,
-#' reports results in APA format
+#' reports results in APA format. \code{chi2} is accepted as an alias.
+#' @param chi2 Alias for \code{chi}. If both are provided, they must agree.
 #' @param correct Logical. If \code{TRUE}, applies Yates' continuity correction 
 #' for 2x2 tables in the chi-square test. Default is \code{FALSE} (no correction).
 #' 
@@ -58,7 +59,7 @@
 table2 <- function(..., data = NULL, exclude = if (useNA == "no") c(NA, NaN), 
                   useNA = c("no", "ifany", "always"), 
                   dnn = NULL, deparse.level = 1, prop = NULL, digits = 3, 
-                  chi = FALSE, correct = FALSE) {
+                  chi = FALSE, chi2 = NULL, correct = FALSE) {
   
   # FUNCTION OUTLINE:
   # 1. Validate and process useNA and exclude arguments
@@ -78,6 +79,14 @@ table2 <- function(..., data = NULL, exclude = if (useNA == "no") c(NA, NaN),
   # Set exclude default based on useNA
   if (missing(exclude)) {
     exclude <- if (useNA == "no") c(NA, NaN) else NULL
+  }
+  
+  # Accept chi= or chi2= (chi2 matches package marketing copy)
+  if (!is.null(chi2)) {
+    if (!missing(chi) && isTRUE(chi) != isTRUE(chi2)) {
+      stop("table2(): use only one of `chi=` or `chi2=` (not both with different values)", call. = FALSE)
+    }
+    chi <- isTRUE(chi2)
   }
   
   # TASK 2: Validate inputs and handle data argument
