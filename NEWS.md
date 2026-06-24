@@ -3,7 +3,12 @@
 ### Improvements
 - `lm2()`: improved display rounding for printed regression tables. Near-zero numerical noise (e.g. from near-perfect fits) displays as `.000` instead of long scientific-notation strings; values with `|x| < 1` always omit the leading zero (including zero). Extreme `t` statistics display as `>999`. New optional `round` argument on `lm2()` and `print.lm2()`: `NULL` uses magnitude-based rules, `round = -1` uses R default `format()`, and non-negative values fix decimal places.
 - `plot_cdf()`: `xlim` passed via `...` is now fully honored — ECDF curves are drawn over the requested range, not only the data range.
-- `plot_freq()`, `plot_density()`, `plot_cdf()`, and related helpers: automatic titles and axis labels now strip data-frame prefixes from `$` expressions while keeping the rest of the expression.
+- `table2()`: `chi2=` is accepted as an alias for `chi=` (if both are passed, they must agree).
+
+### Bug fixes
+- `plot_freq()`, `plot_density()`, `plot_cdf()`, `plot_means()`, `lm2()`, and related helpers: automatic titles and axis labels now strip data-frame prefixes from `$` expressions while keeping the rest of the expression.
+- `plot_means()`: user-supplied `ylim` is respected — the axis is no longer pulled down to 0 for `n=` labels; the lower limit may extend slightly below your requested minimum only to make room for sample-size labels.
+- `table2()`: chi-square test again prints in APA format (`χ²(df) = ..., p = ...`) when printing results with `chi=TRUE`.
 
 # statuser 0.3.0 (2026-05-20)
 ### New functions
