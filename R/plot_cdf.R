@@ -25,7 +25,7 @@
 #' @param ... Additional arguments passed to plotting functions. Can be single values
 #'   (applied to all groups) or vectors (applied element-wise to each group).
 #'   Common parameters include \code{col}, \code{lwd}, \code{lty}, \code{pch},
-#'   \code{type}, etc.
+#'   \code{type}, \code{xlim}, and \code{ylim}.
 #'
 #' @return Invisibly returns a list containing:
 #'   \itemize{
@@ -68,6 +68,9 @@
 #' df <- data.frame(value = rnorm(100), group = rep(c("A", "B"), 50))
 #' plot_cdf(value ~ group, data = df)
 #' plot_cdf(value ~ group, data = df, col = c("red", "blue"))
+#'
+#' # Custom x-axis limits
+#' plot_cdf(y ~ group, xlim = c(0, 10))
 #'
 #' # Compare two vectors
 #' y1 <- rnorm(50)
@@ -349,11 +352,24 @@ plot_cdf <- function(formula, y2 = NULL, data = NULL, order = NULL, show.ks = TR
   all_y <- unlist(y_ranges)
   y_min <- min(all_y, na.rm = TRUE)
   y_max <- max(all_y, na.rm = TRUE)
-  y_range <- y_max - y_min
-  y_lim <- c(y_min - 0.05 * y_range, y_max + 0.05 * y_range)
 
-  # Create sequence for plotting ECDF
-  y_seq <- seq(y_min, y_max, length.out = 1000)
+  user_xlim <- "xlim" %in% names(dots)
+  if (user_xlim) {
+    default_xlim <- as.numeric(dots$xlim)
+    if (length(default_xlim) != 2L || any(!is.finite(default_xlim))) {
+      stop("plot_cdf(): 'xlim' must be a numeric vector of length 2", call. = FALSE)
+    }
+    y_seq_min <- min(default_xlim)
+    y_seq_max <- max(default_xlim)
+  } else {
+    x_range <- y_max - y_min
+    default_xlim <- c(y_min - 0.05 * x_range, y_max + 0.05 * x_range)
+    y_seq_min <- y_min
+    y_seq_max <- y_max
+  }
+
+  # Create sequence for plotting ECDF (spans user xlim when provided)
+  y_seq <- seq(y_seq_min, y_seq_max, length.out = 1000)
 
   # Helper function for NULL coalescing
   `%||%` <- function(x, y) if (is.null(x)) y else x
@@ -401,14 +417,6 @@ plot_cdf <- function(formula, y2 = NULL, data = NULL, order = NULL, show.ks = TR
       } else {
         default_ylim <- dots$ylim
       }
-      
-    # Set default xlim if not provided (add padding to prevent clipping at edges)
-      if (!"xlim" %in% names(dots)) {
-        x_range <- y_max - y_min
-        default_xlim <- c(y_min - 0.05 * x_range, y_max + 0.05 * x_range)
-      } else {
-        default_xlim <- dots$xlim
-      }
     
     # Ensure adequate top margin for main title and legend
     # Only save/restore what we modify; restoring full `par()` can reset `mfg`
@@ -435,7 +443,7 @@ plot_cdf <- function(formula, y2 = NULL, data = NULL, order = NULL, show.ks = TR
     # Also remove xlab, ylab, main since we handle them separately
     plot_dots <- dots
     vectorized_params <- c("col", "lwd", "lty", "type", "pch", "data")
-    plot_params_to_remove <- c(vectorized_params, "xlab", "ylab", "main")
+    plot_params_to_remove <- c(vectorized_params, "xlab", "ylab", "main", "xlim", "ylim")
     plot_dots[plot_params_to_remove] <- NULL
     
     plot_args <- list(x = y_seq, y = first_y_vals, 
@@ -451,6 +459,7 @@ plot_cdf <- function(formula, y2 = NULL, data = NULL, order = NULL, show.ks = TR
                       yaxt = "n",  # Suppress default y-axis to draw custom percentage axis
                       xaxt = "n")  # Suppress default x-axis to redraw with adjusted label position
     if (!is.null(pch1)) plot_args$pch <- pch1
+    if (user_xlim && !"xaxs" %in% names(dots)) plot_args$xaxs <- "i"
     
     # Set up plot
     do.call(plot, c(plot_args, plot_dots))
