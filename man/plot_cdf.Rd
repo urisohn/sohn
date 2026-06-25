@@ -42,7 +42,7 @@ quantile lines and results are not displayed.}
 \item{...}{Additional arguments passed to plotting functions. Can be single values
 (applied to all groups) or vectors (applied element-wise to each group).
 Common parameters include \code{col}, \code{lwd}, \code{lty}, \code{pch},
-\code{type}, etc.}
+\code{type}, \code{xlim}, and \code{ylim}.}
 }
 \value{
 Invisibly returns a list containing:
@@ -91,6 +91,9 @@ plot_cdf(y ~ group, col = c("red", "green", "blue"), lty = c(1, 2, 3), lwd = 2)
 df <- data.frame(value = rnorm(100), group = rep(c("A", "B"), 50))
 plot_cdf(value ~ group, data = df)
 plot_cdf(value ~ group, data = df, col = c("red", "blue"))
+
+# Custom x-axis limits
+plot_cdf(y ~ group, xlim = c(0, 10))
 
 # Compare two vectors
 y1 <- rnorm(50)

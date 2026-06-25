@@ -20,6 +20,10 @@
 #'   to be projected out (absorbed) before estimation. Useful for models with many 
 #'   fixed effect groups (e.g., \code{~ firm_id} or \code{~ firm_id + year}). 
 #'   Passed to \code{\link[estimatr]{lm_robust}}.
+#' @param round Optional integer controlling printed numeric formatting.
+#'   \code{NULL} (default): magnitude-based decimals (1--3 places) with zero-chop.
+#'   \code{-1}: R default \code{format()} (respects \code{options("digits")}), with
+#'   leading-dot style for \code{|x| < 1}. Non-negative \code{k}: fixed \code{k} decimal places.
 #' @param ... Additional arguments passed to \code{\link[estimatr]{lm_robust}}.
 #'
 #' @details
@@ -162,7 +166,7 @@
 #' @usage NULL
 #' @export lm2
 lm2 <- function(formula, data = NULL, se_type = "HC3", notes = TRUE,
-                clusters = NULL, fixed_effects = NULL, ...) {
+                clusters = NULL, fixed_effects = NULL, round = NULL, ...) {
 
   if (!missing(notes)) {
     warn_notes_deprecated()
@@ -170,6 +174,8 @@ lm2 <- function(formula, data = NULL, se_type = "HC3", notes = TRUE,
 
   # Capture the call
   cl <- match.call()
+
+  round <- validate_lm2_round(round)
   
   # Check that estimatr is available
   if (!requireNamespace("estimatr", quietly = TRUE)) {
@@ -560,6 +566,7 @@ lm2 <- function(formula, data = NULL, se_type = "HC3", notes = TRUE,
   # Store the statuser-specific attributes
  attr(result, "statuser_table") <- statuser_table
   attr(result, "lm2_call") <- cl
+  attr(result, "round") <- round
   attr(result, "classical_fit") <- classical_fit
   attr(result, "na_counts") <- na_counts
   attr(result, "n_missing") <- n_missing
@@ -574,6 +581,21 @@ lm2 <- function(formula, data = NULL, se_type = "HC3", notes = TRUE,
   class(result) <- c("lm2", class(result))
   
   return(result)
+}
+
+validate_lm2_round <- function(round) {
+  if (is.null(round)) {
+    return(NULL)
+  }
+  if (length(round) != 1L) {
+    stop("`round` must be NULL, -1, or a non-negative integer.")
+  }
+  round_num <- suppressWarnings(as.numeric(round))
+  round_int <- as.integer(round)
+  if (is.na(round_int) || round_num != round_int || round_int < -1L) {
+    stop("`round` must be NULL, -1, or a non-negative integer.")
+  }
+  round_int
 }
 
 warn_notes_deprecated <- function() {
@@ -712,47 +734,70 @@ lm2_notes <- function() {
 #'
 #' @param x An object of class \code{lm2}
 #' @param notes \code{deprecated}. Ignored. Use \code{\link{lm2_notes}} after printing.
+#' @param round Optional integer: \code{NULL} uses the value from \code{lm2()};
+#'   \code{-1} for R default \code{format()}; non-negative \code{k} for fixed decimals.
 #' @param ... Additional arguments (ignored)
 #'
 #' @return Invisibly returns the original object
 #' @export
-print.lm2 <- function(x, notes, ...) {
+print.lm2 <- function(x, notes, round = NULL, ...) {
 
   if (!missing(notes)) {
     warn_notes_deprecated()
   }
 
+  if (is.null(round)) {
+    round <- attr(x, "round")
+  }
+  round <- validate_lm2_round(round)
+
   # Get the statuser table from attribute
   tbl <- attr(x, "statuser_table")
   
-  # Helper: smart rounding based on magnitude
-  # >=100: 1 decimal, >=10: 2 decimals, >=0.01: 3 decimals
-  # <0.01: show 2 significant non-zero digits (e.g., .000042)
+  strip_leading_zero <- function(formatted, val) {
+    if (abs(val) < 1) {
+      if (val < 0) {
+        formatted <- sub("^-0\\.", "-.", formatted)
+      } else {
+        formatted <- sub("^0\\.", ".", formatted)
+      }
+    }
+    formatted
+  }
+
+  # Helper: smart rounding based on magnitude or fixed round argument
+  # >=100: 1 decimal, >=10: 2 decimals, else 3 decimals (when round is NULL)
+  # Values below half a unit in the last place display as zero
   smart_round <- function(val) {
     if (is.na(val)) return(NA_character_)
     abs_val <- abs(val)
-    if (abs_val >= 100) {
-      decimals <- 1
-      return(format(round(val, decimals), nsmall = decimals))
-    } else if (abs_val >= 10) {
-      decimals <- 2
-      return(format(round(val, decimals), nsmall = decimals))
-    } else if (abs_val >= 0.01 || abs_val == 0) {
-      decimals <- 3
-      return(format(round(val, decimals), nsmall = decimals))
-    } else {
-      # For values < 0.01, show 2 significant digits
-      # e.g., 0.000042323 -> .000042
-      sign_char <- if (val < 0) "-" else ""
-      # Find how many decimal places needed for 2 sig figs
-      log_val <- floor(log10(abs_val))
-      decimals <- -log_val + 1  # +1 to get 2 sig figs
-      rounded <- round(abs_val, decimals)
-      formatted <- format(rounded, nsmall = decimals, scientific = FALSE)
-      # Remove leading zero
-      formatted <- sub("^0\\.", ".", formatted)
-      return(paste0(sign_char, formatted))
+    if (!is.null(round) && identical(round, -1L)) {
+      formatted <- trimws(format(val, trim = TRUE))
+      return(strip_leading_zero(formatted, val))
     }
+    if (!is.null(round)) {
+      decimals <- round
+    } else if (abs_val >= 100) {
+      decimals <- 1L
+    } else if (abs_val >= 10) {
+      decimals <- 2L
+    } else {
+      decimals <- 3L
+    }
+    threshold <- 0.5 * 10^(-decimals)
+    if (abs_val < threshold) {
+      val <- 0
+    }
+    rounded <- round(val, decimals)
+    formatted <- format(rounded, nsmall = decimals, scientific = FALSE)
+    strip_leading_zero(formatted, rounded)
+  }
+
+  # Helper: format t statistics; cap extreme values when SE is near zero
+  format_t <- function(val) {
+    if (is.na(val)) return(NA_character_)
+    if (abs(val) > 999) return(">999")
+    smart_round(val)
   }
   
   # Helper: format p-value (no leading zero, <.0001 if tiny)
@@ -1136,7 +1181,7 @@ print.lm2 <- function(x, notes, ...) {
       paste0(est, "  ")
     }
   })
-  t_vals <- sapply(tbl$t, smart_round)
+  t_vals <- sapply(tbl$t, format_t)
   
   # Check if df varies across coefficients
   df_vals <- tbl$df

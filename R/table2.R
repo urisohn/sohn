@@ -15,7 +15,8 @@
 #'   }
 #' @param digits Number of decimal values to show for proportions 
 #' @param chi Logical. If \code{TRUE}, performs a chi-square test on frequency table,
-#' reports results in APA format
+#' reports results in APA format. \code{chi2} is accepted as an alias.
+#' @param chi2 Alias for \code{chi}. If both are provided, they must agree.
 #' @param correct Logical. If \code{TRUE}, applies Yates' continuity correction 
 #' for 2x2 tables in the chi-square test. Default is \code{FALSE} (no correction).
 #' 
@@ -58,7 +59,7 @@
 table2 <- function(..., data = NULL, exclude = if (useNA == "no") c(NA, NaN), 
                   useNA = c("no", "ifany", "always"), 
                   dnn = NULL, deparse.level = 1, prop = NULL, digits = 3, 
-                  chi = FALSE, correct = FALSE) {
+                  chi = FALSE, chi2 = NULL, correct = FALSE) {
   
   # FUNCTION OUTLINE:
   # 1. Validate and process useNA and exclude arguments
@@ -78,6 +79,14 @@ table2 <- function(..., data = NULL, exclude = if (useNA == "no") c(NA, NaN),
   # Set exclude default based on useNA
   if (missing(exclude)) {
     exclude <- if (useNA == "no") c(NA, NaN) else NULL
+  }
+  
+  # Accept chi= or chi2= (chi2 matches package marketing copy)
+  if (!is.null(chi2)) {
+    if (!missing(chi) && isTRUE(chi) != isTRUE(chi2)) {
+      stop("table2(): use only one of `chi=` or `chi2=` (not both with different values)", call. = FALSE)
+    }
+    chi <- isTRUE(chi2)
   }
   
   # TASK 2: Validate inputs and handle data argument
@@ -544,98 +553,6 @@ table2 <- function(..., data = NULL, exclude = if (useNA == "no") c(NA, NaN),
   class(output) <- c("table2", class(output))
   return(output)
 }
-
-#' Print method for table2 objects
-#'
-#' @param x An object of class \code{table2}
-#' @param ... Additional arguments (ignored)
-#'
-#' @return Invisibly returns the original object
-#' @export
-print.table2 <- function(x, ...) {
-  # Print the frequency table
-  if (!is.null(x$freq)) {
-    print(x$freq)
-  }
-  
-  # Print proportion table if present
-  if (!is.null(x$prop)) {
-    cat("\n")
-    prop_type <- attr(x, "prop_type")
-    if (!is.null(prop_type)) {
-      if (prop_type == "all" || prop_type == 0) {
-        cat("Overall proportions:\n")
-      } else if (prop_type == "row" || prop_type == 1 || prop_type == "rows") {
-        cat("Row proportions:\n")
-      } else if (prop_type == "col" || prop_type == 2 || 
-                 prop_type == "cols" || prop_type == "column" || prop_type == "columns") {
-        cat("Column proportions:\n")
-      }
-    }
-    # Format and print proportion values with the specified number of digits
-    digits <- attr(x, "proportion_digits")
-    if (is.null(digits)) digits <- 3  # Default
-    
-    # Create a formatted version of the prop table with fixed decimal places
-    prop_table <- x$prop
-    
-    # Convert to character matrix with fixed decimal places using formatC
-    prop_values <- as.numeric(prop_table)
-    prop_formatted <- formatC(prop_values, format = "f", digits = digits)
-    
-    # Restore dimensions and dimnames
-    dim(prop_formatted) <- dim(prop_table)
-    dimnames(prop_formatted) <- dimnames(prop_table)
-    
-    # Print as a formatted table
-    print(noquote(prop_formatted))
-  }
-  
-  # Print chi-square test if present
-  if (!is.null(x$chisq)) {
-    cat("\n")
-    print(x$chisq)
-  }
-  
-  # Print missing data notes (mirroring t.test2 style)
-  var_na_counts <- attr(x, "var_na_counts")
-  var_lengths <- attr(x, "var_lengths")
-  var_names <- attr(x, "var_names")
-  
-  if (!is.null(var_na_counts) && !is.null(var_lengths) && !is.null(var_names)) {
-    # Check if any variables have missing data
-    has_missing <- any(var_na_counts > 0, na.rm = TRUE)
-    
-    if (has_missing) {
-      cat("\n")
-      missing_msgs <- character(0)
-      for (i in seq_along(var_na_counts)) {
-        if (!is.na(var_na_counts[i]) && var_na_counts[i] > 0) {
-          var_name <- if (i <= length(var_names) && !is.na(var_names[i]) && var_names[i] != "") {
-            paste0("'", var_names[i], "'")
-          } else {
-            paste0("variable ", i)
-          }
-          missing_msgs <- c(missing_msgs, 
-                           paste0(var_name, " is missing ", var_na_counts[i], 
-                                 " of ", var_lengths[i], " values"))
-        }
-      }
-      if (length(missing_msgs) > 0) {
-        cat("note:", paste(missing_msgs, collapse = ", while "), "\n")
-      }
-    }
-  }
-  
-  invisible(x)
-}
-
-
-
-
-
-
-
 
 
 

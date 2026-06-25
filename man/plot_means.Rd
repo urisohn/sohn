@@ -84,7 +84,11 @@ maximum y value to make room for annotations. When \code{"auto"}, uses 0.35
 when an interaction p-value is shown (scenario 2) and 0.25 otherwise.}
 
 \item{...}{Additional arguments passed to \code{plot()} (e.g., \code{main},
-\code{ylim}, \code{ylab}).}
+\code{ylim}, \code{ylab}). If \code{ylim} is supplied, the lower limit may be
+extended slightly downward (below your requested minimum) to leave room for
+\code{n=} sample-size labels; it is not pulled down to 0 unless your lower
+\code{ylim} already includes 0. The upper \code{ylim} is unchanged (aside from
+headroom for p-value brackets).}
 }
 \value{
 A minimal list returned invisibly with two elements:

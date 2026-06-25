@@ -16,7 +16,9 @@
 \item{digits}{Number of decimal values to show for proportions}
 
 \item{chi}{Logical. If \code{TRUE}, performs a chi-square test on frequency table,
-reports results in APA format}
+reports results in APA format. \code{chi2} is accepted as an alias.}
+
+\item{chi2}{Alias for \code{chi}. If both are provided, they must agree.}
 
 \item{correct}{Logical. If \code{TRUE}, applies Yates' continuity correction 
 for 2x2 tables in the chi-square test. Default is \code{FALSE} (no correction).}

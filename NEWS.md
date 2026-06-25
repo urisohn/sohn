@@ -1,4 +1,16 @@
-# statuser 0.3.0
+# statuser 0.3.1 (2026-06-24)
+
+### Improvements
+- `lm2()`: improved display rounding for printed regression tables. Near-zero numerical noise (e.g. from near-perfect fits) displays as `.000` instead of long scientific-notation strings; values with `|x| < 1` always omit the leading zero (including zero). Extreme `t` statistics display as `>999`. New optional `round` argument on `lm2()` and `print.lm2()`: `NULL` uses magnitude-based rules, `round = -1` uses R default `format()`, and non-negative values fix decimal places.
+- `plot_cdf()`: `xlim` passed via `...` is now fully honored — ECDF curves are drawn over the requested range, not only the data range.
+- `table2()`: `chi2=` is accepted as an alias for `chi=` (if both are passed, they must agree).
+
+### Bug fixes
+- `plot_freq()`, `plot_density()`, `plot_cdf()`, `plot_means()`, `lm2()`, and related helpers: automatic titles and axis labels now strip data-frame prefixes from `$` expressions while keeping the rest of the expression.
+- `plot_means()`: user-supplied `ylim` is respected — the axis is no longer pulled down to 0 for `n=` labels; the lower limit may extend slightly below your requested minimum only to make room for sample-size labels.
+- `table2()`: chi-square test again prints in APA format (`χ²(df) = ..., p = ...`) when printing results with `chi=TRUE`.
+
+# statuser 0.3.0 (2026-05-20)
 ### New functions
 - Added `stimulus.plot()` for stimulus plots in matched/treated-stimulus designs (means and effects plots with null resampling).
 - Added `stimulus.beeswarm()` for compared-stimulus designs.
@@ -12,7 +24,7 @@
 ### Deprecated
 - `lm2()` and `print.lm2()`: the `notes` argument is deprecated (ignored). Passing `notes = TRUE` or `notes = FALSE` emits a message directing users to `lm2_notes()`.
 
-# statuser 0.2.1
+# statuser 0.2.1 (2026-04-25)
 ### changes to pass CRAN inspection
 - `plot_means()`: removed the `save.as` argument (no longer saves plots to PNG/SVG).
 - `t.test2()`: documented S3 registration as `t.test2` for `base::t` to avoid recurring CRAN S3 consistency notes while keeping direct `t.test2(...)` usage unchanged.
@@ -40,7 +52,7 @@
 - `text2()` applies vector arguments passed in `...` (e.g. `col`) per label, fixing wrong colors when labels differ (notably for `plot_means()` value labels).
 - `plot_cdf()` restores only selected graphics parameters on exit (`mar`, `mgp`) so layouts using `par(mfrow = ...)` are not reset. Similar graphics-state cleanup was applied in other plotting functions where appropriate.
 
-# statuser 0.1.9
+# statuser 0.1.9 (2026-02-26)
 - `plot_freq()`, `plot_density()`, and `plot_cdf()`: optional comparison of two vectors (in addition to formula syntax); legend placed higher on the plot.
 - `table2()`: clearer dimension labels for expressions such as `df$var > 10`; very long labels are truncated.
 

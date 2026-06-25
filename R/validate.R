@@ -60,17 +60,22 @@ formula_symbols_required_in_env <- function(formula) {
   setdiff(av, .collect_dollar_rhs_symbols(formula))
 }
 
-.extract_formula_side_label <- function(expr) {
-  # Produce a human-friendly label for plotting/tables.
-  # For `$` expressions, we strip the data prefix: `df$y` -> `y`.
+.extract_expr_label <- function(expr) {
+  # Produce a human-friendly label: drop data-frame names and `$`, keep all else.
+  # e.g. round(df$gpa5, 1) -> "round(gpa5, 1)"; df$gpa8 - df$gpa7 -> "gpa8 - gpa7"
   if (is.symbol(expr) || is.name(expr)) {
     return(as.character(expr))
   }
-  es <- deparse(expr, width.cutoff = 500L)
+  es <- paste(deparse(expr, width.cutoff = 500L), collapse = "")
   if (grepl("\\$", es)) {
-    return(trimws(sub(".*\\$", "", es)))
+    label <- gsub("[[:alnum:]._]+\\$", "", es)
+    return(gsub("\\s+", " ", trimws(label)))
   }
   trimws(es)
+}
+
+.extract_formula_side_label <- function(expr) {
+  .extract_expr_label(expr)
 }
 
 #' @noRd
@@ -169,8 +174,8 @@ formula_symbols_required_in_env <- function(formula) {
   predictor_labels <- vapply(
     predictor_terms,
     function(s) {
-      s2 <- trimws(s)
-      if (grepl("\\$", s2)) sub(".*\\$", "", s2) else s2
+      expr <- parse(text = trimws(s))[[1L]]
+      .extract_expr_label(expr)
     },
     character(1)
   )

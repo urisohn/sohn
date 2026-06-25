@@ -45,7 +45,11 @@
 #'   maximum y value to make room for annotations. When \code{"auto"}, uses 0.35
 #'   when an interaction p-value is shown (scenario 2) and 0.25 otherwise.
 #' @param ... Additional arguments passed to \code{plot()} (e.g., \code{main},
-#'   \code{ylim}, \code{ylab}).
+#'   \code{ylim}, \code{ylab}). If \code{ylim} is supplied, the lower limit may be
+#'   extended slightly downward (below your requested minimum) to leave room for
+#'   \code{n=} sample-size labels; it is not pulled down to 0 unless your lower
+#'   \code{ylim} already includes 0. The upper \code{ylim} is unchanged (aside from
+#'   headroom for p-value brackets).
 #'
 #' @details
 #' When \code{tests="auto"}, the function reports a small default set of
@@ -762,6 +766,56 @@ plot_means_span <- function(y_min, y_max) {
   span
 }
 
+# Layout for n= labels: band below lowest visible geometry (respects user ylim floor).
+plot_means_n_band_layout <- function(heights,
+                                     ci_map,
+                                     cell_keys_drawn,
+                                     x_centers_drawn,
+                                     y_min_data,
+                                     y_max_data,
+                                     user_ylim = NULL,
+                                     pad_frac = 0.04) {
+  geom_vals <- 0
+  h_fin <- heights[is.finite(heights)]
+  if (length(h_fin)) geom_vals <- c(geom_vals, h_fin)
+  if (nrow(ci_map) > 0 && length(cell_keys_drawn) == length(x_centers_drawn)) {
+    mi <- match(cell_keys_drawn, ci_map$cell_key)
+    ok <- !is.na(mi)
+    if (any(ok)) {
+      lwr <- ci_map$lwr[mi[ok]]
+      lwr <- lwr[is.finite(lwr)]
+      if (length(lwr)) geom_vals <- c(geom_vals, lwr)
+    }
+  }
+  geom_bottom <- min(geom_vals)
+  if (!is.finite(geom_bottom)) geom_bottom <- 0
+  visible_floor <- geom_bottom
+  if (!is.null(user_ylim) && length(user_ylim) >= 1L && is.finite(user_ylim[1L])) {
+    visible_floor <- user_ylim[1L]
+    ink <- geom_vals[is.finite(geom_vals) & geom_vals >= user_ylim[1L]]
+    if (length(ink)) visible_floor <- min(visible_floor, min(ink))
+  }
+  y_lo <- y_min_data
+  y_hi <- y_max_data
+  if (!is.null(user_ylim) && length(user_ylim) >= 2L) {
+    if (is.finite(user_ylim[1L])) y_lo <- user_ylim[1L]
+    if (is.finite(user_ylim[2L])) y_hi <- user_ylim[2L]
+  }
+  y_span <- plot_means_span(y_lo, y_hi)
+  pad_n <- pad_frac * y_span
+  # Three pads below visible_floor: ylim margin, label body, gap above label (text uses adj bottom).
+  band_h <- 3 * pad_n
+  ylim_low_needed <- visible_floor - band_h
+  n_y <- ylim_low_needed + pad_n
+  list(
+    geom_bottom = geom_bottom,
+    visible_floor = visible_floor,
+    n_y = n_y,
+    ylim_low_needed = ylim_low_needed,
+    pad_n = pad_n
+  )
+}
+
 plot_means_parse_tests <- function(tests_str) {
   if (!is.character(tests_str) || length(tests_str) != 1 || is.na(tests_str) || !nzchar(tests_str)) {
     stop("plot_means(): 'tests' must be a single non-empty string", call. = FALSE)
@@ -1193,26 +1247,27 @@ plot_means_draw <- function(v,
     y_span_data <- plot_means_span(y_min, y_max)
   }
   
-  # Reserve a band below the lowest error whisker for n= labels.
-  if (length(x_centers_drawn) && !"yaxt" %in% names(dots) && !"ylim" %in% names(dots)) {
-    min_whisker <- y_min
-    if (nrow(ci_map) > 0 && length(cell_keys_drawn) == length(x_centers_drawn)) {
-      mi <- match(cell_keys_drawn, ci_map$cell_key)
-      ok <- !is.na(mi)
-      if (any(ok)) {
-        lwr <- ci_map$lwr[mi[ok]]
-        lwr <- lwr[is.finite(lwr)]
-        if (length(lwr)) min_whisker <- min(min_whisker, min(lwr))
+  # Reserve a band below the lowest bar/CI for n= labels (auto and user ylim).
+  n_layout <- NULL
+  user_ylim_arg <- if ("ylim" %in% names(dots)) dots$ylim else NULL
+  if (length(x_centers_drawn) > 0) {
+    n_layout <- plot_means_n_band_layout(
+      heights = heights,
+      ci_map = ci_map,
+      cell_keys_drawn = cell_keys_drawn,
+      x_centers_drawn = x_centers_drawn,
+      y_min_data = y_min,
+      y_max_data = y_max,
+      user_ylim = user_ylim_arg
+    )
+    if (!"yaxt" %in% names(dots)) {
+      if ("ylim" %in% names(dots)) {
+        dots$ylim[1] <- min(dots$ylim[1], n_layout$ylim_low_needed)
+      } else {
+        y_min <- min(y_min, n_layout$ylim_low_needed)
+        y_span_data <- plot_means_span(y_min, y_max)
       }
     }
-    # Minimal expansion: just enough room to place n= slightly below the lowest whisker.
-    #   If all CIs are above 0, we still want n= below the bars (below 0), not inside them.
-    min_anchor <- min(0, min_whisker)
-    pad_n <- 0.04 * y_span_data
-    y_n_target <- min_anchor - pad_n
-    y_min_target <- y_n_target - pad_n
-    y_min <- min(y_min, y_min_target)
-    y_span_data <- plot_means_span(y_min, y_max)
   }
 
   # Extra headroom only when stacked p-value brackets require it.
@@ -1352,7 +1407,10 @@ plot_means_draw <- function(v,
   }
   
   ylim_top <- y_max + buffer_top_effective * y_span_data + extra_top
-  if (!"ylim" %in% names(dots)) dots$ylim <- c(y_min, ylim_top)
+  if (!"ylim" %in% names(dots)) {
+    dots$ylim <- c(y_min, ylim_top)
+  }
+  ylim_plot <- dots$ylim
   if (!"xlim" %in% names(dots)) dots$xlim <- c(0, x_pos)
   if (!"las" %in% names(dots)) dots$las <- 1
   if (!"font.lab" %in% names(dots)) dots$font.lab <- 2
@@ -1368,11 +1426,13 @@ plot_means_draw <- function(v,
   plot_args <- c(list(x = 0, y = 0), dots)
   do.call(plot, plot_args)
 
-  abline(h = 0, col = "gray80")
+  if (0 >= ylim_plot[1] && 0 <= ylim_plot[2]) {
+    abline(h = 0, col = "gray80")
+  }
   
   if (!user_provided_yaxt && (is.null(dots$axes) || isTRUE(dots$axes))) {
-    y_ticks <- pretty(c(y_min, y_max), n = 5)
-    y_ticks <- y_ticks[y_ticks >= y_min & y_ticks <= y_max + 1e-9]
+    y_ticks <- pretty(ylim_plot, n = 5)
+    y_ticks <- y_ticks[y_ticks >= ylim_plot[1] & y_ticks <= ylim_plot[2] + 1e-9]
     axis(2, at = y_ticks, las = 1)
   }
   
@@ -1784,26 +1844,31 @@ plot_means_draw <- function(v,
   }
   
   if (length(x_centers_drawn) > 0 && length(n_total_drawn) == length(x_centers_drawn)) {
-    usr <- par("usr")
-    y_span <- (usr[4] - usr[3])
-    
-    # Place sample sizes just below the lowest CI whisker (with a small pad), so we
-    # don't have to create a large empty band under the plot.
-    min_whisker <- 0
-    if (nrow(ci_map) > 0 && length(cell_keys_drawn) == length(x_centers_drawn)) {
-      mi <- match(cell_keys_drawn, ci_map$cell_key)
-      ok <- !is.na(mi)
-      if (any(ok)) {
-        lwr <- ci_map$lwr[mi[ok]]
-        lwr <- lwr[is.finite(lwr)]
-        if (length(lwr)) min_whisker <- min(lwr, na.rm = TRUE)
-      }
+    if (is.null(n_layout)) {
+      n_layout <- plot_means_n_band_layout(
+        heights = heights,
+        ci_map = ci_map,
+        cell_keys_drawn = cell_keys_drawn,
+        x_centers_drawn = x_centers_drawn,
+        y_min_data = y_min,
+        y_max_data = y_max,
+        user_ylim = ylim_plot
+      )
     }
-    pad_n <- 0.04 * y_span
-    min_anchor <- min(0, min_whisker)
-    y_n <- min_anchor - pad_n
-    y_n <- max(y_n, usr[3] + pad_n)
-    
+    y_n <- n_layout$n_y
+    usr <- par("usr")
+    if (y_n + n_layout$pad_n > n_layout$visible_floor) {
+      warning(
+        "plot_means(): n= labels may overlap bars; widen ylim or use a taller plot region",
+        call. = FALSE
+      )
+    }
+    if (y_n < usr[3]) {
+      warning(
+        "plot_means(): n= labels may be clipped at the bottom of the plot",
+        call. = FALSE
+      )
+    }
     n_vals <- ifelse(is.finite(n_total_drawn), n_total_drawn, NA)
     labels <- paste0("n=", n_vals)
     n_cex <- 0.9 * values.cex
