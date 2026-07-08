@@ -77,7 +77,9 @@ GAM engine.}
 
 \item{ylab2}{Character. Y-axis label for JN panel.}
 
-\item{cols}{Character vector of length 3. Colors for the three curves.}
+\item{cols}{Character vector of length 2 or 3. Colors for the curves.
+Length 2 is allowed when the focal predictor has exactly two levels;
+otherwise length 3 is required (three spotlights or up to three categorical levels).}
 
 \item{main1}{Character. Title for simple slopes panel.}
 

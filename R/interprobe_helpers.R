@@ -288,18 +288,19 @@ ip_validate_arguments <- function(
   save.as,
   xvar, zvar, yvar,
   x.ticks, y1.ticks, y2.ticks,
-  moderator.on.x.axis
+  moderator.on.x.axis,
+  dataname = NULL
 ) {
   if (!is.null(data)) {
-    dataname <- deparse(substitute(data))
+    if (is.null(dataname) || !nzchar(dataname)) dataname <- "data"
     if (!inherits(data, "data.frame")) {
       exit(paste0("interprobe says(): the 'data' argument must be a data.frame, but '", dataname, "' is not a data.frame."))
     }
 
     n1 <- names(data)
-    if (!xvar %in% n1) exit(paste0("interprobe() says the focal variable ('", xvar, "') is not in the dataset '", dataname, "'."))
-    if (!zvar %in% n1) exit(paste0("interprobe() says the moderator variable ('", zvar, "') is not in the dataset '", dataname, "'."))
-    if (!yvar %in% n1) exit(paste0("interprobe() says the dependent variable ('", yvar, "') is not in the dataset '", dataname, "'."))
+    if (!xvar %in% n1) exit(paste0("'", xvar, "' is not a variable in dataframe '", dataname, "'"))
+    if (!zvar %in% n1) exit(paste0("'", zvar, "' is not a variable in dataframe '", dataname, "'"))
+    if (!yvar %in% n1) exit(paste0("'", yvar, "' is not a variable in dataframe '", dataname, "'"))
   }
 
   if (
@@ -360,7 +361,19 @@ ip_validate_arguments <- function(
   ip_check1(main1, "main1", 1, "character")
   ip_check1(main2, "main2", 1, "character")
   ip_check1(legend.round, "legend.round", 2, "integer")
-  ip_check1(cols, "cols", 3, "character")
+
+  # cols: length 2 (binary focal) or 3 (spotlights / 3-level categorical)
+  if (!is.character(cols)) {
+    exit("interprobe() says the argument 'cols' must be a character variable but it isn't.")
+  }
+  if (!length(cols) %in% c(2L, 3L)) {
+    exit(
+      paste0(
+        "interprobe() says the argument 'cols' must be of length 2 or 3\n",
+        "but it is of length '", length(cols), "'"
+      )
+    )
+  }
 
   draw2 <- draw
   if (identical(draw2, "simple.slopes")) draw2 <- "simple slopes"

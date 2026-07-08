@@ -1,3 +1,9 @@
+# statuser 0.3.1.9001
+
+### Bug fixes
+- `interprobe()`: bare (unquoted) names for `x`, `z`, and `y` now work with `data=` and `model=` even when those names exist only as columns (not in the calling environment). Missing columns report e.g. `'value' is not a variable in dataframe 'df'`.
+- `interprobe()`: `cols` of length 2 is allowed when the focal predictor has two levels (previously required length 3 even for binary `x`).
+
 # statuser 0.3.1 (2026-06-24)
 
 ### Improvements
